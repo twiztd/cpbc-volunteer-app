@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { adminLogin, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote } from '../services/api'
+import { adminLogin, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
@@ -22,6 +22,14 @@ function AdminDashboard() {
   const [newAdminData, setNewAdminData] = useState({ email: '', password: '', confirmPassword: '', name: '' })
   const [newAdminError, setNewAdminError] = useState(null)
   const [newAdminLoading, setNewAdminLoading] = useState(false)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [showTransferConfirm, setShowTransferConfirm] = useState(null)
+  const [transferLoading, setTransferLoading] = useState(false)
+
+  // Ministry Reports state
+  const [ministryReport, setMinistryReport] = useState(null)
+  const [reportLoading, setReportLoading] = useState(false)
+  const [expandedMinistries, setExpandedMinistries] = useState({})
 
   // Volunteer edit modal state
   const [showEditVolunteerModal, setShowEditVolunteerModal] = useState(false)
@@ -45,6 +53,9 @@ function AdminDashboard() {
     if (isAuthenticated && activeTab === 'admins') {
       loadAdminUsers()
     }
+    if (isAuthenticated && activeTab === 'reports') {
+      loadMinistryReport()
+    }
   }, [activeTab, isAuthenticated])
 
   const loadMinistryAreas = async () => {
@@ -61,6 +72,7 @@ function AdminDashboard() {
     try {
       const data = await getAdminUsers(token)
       setAdminUsers(data.admins)
+      setIsSuperAdmin(data.current_user_is_super_admin)
     } catch (err) {
       if (err.response?.status === 401) {
         handleLogout()
@@ -69,6 +81,22 @@ function AdminDashboard() {
       }
     } finally {
       setAdminLoading(false)
+    }
+  }
+
+  const loadMinistryReport = async () => {
+    setReportLoading(true)
+    try {
+      const data = await getMinistryReport(token)
+      setMinistryReport(data)
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleLogout()
+      } else {
+        setError('Failed to load ministry report')
+      }
+    } finally {
+      setReportLoading(false)
     }
   }
 
@@ -175,6 +203,42 @@ function AdminDashboard() {
       loadAdminUsers()
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update admin status')
+    }
+  }
+
+  const handleTransferSuperAdmin = async (admin) => {
+    setTransferLoading(true)
+    try {
+      await transferSuperAdmin(token, admin.id)
+      setShowTransferConfirm(null)
+      loadAdminUsers()
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to transfer super admin role')
+    } finally {
+      setTransferLoading(false)
+    }
+  }
+
+  const toggleMinistryExpand = (ministryArea) => {
+    setExpandedMinistries(prev => ({
+      ...prev,
+      [ministryArea]: !prev[ministryArea]
+    }))
+  }
+
+  const handleExportAllMinistries = async () => {
+    try {
+      await exportAllMinistries(token)
+    } catch (err) {
+      setError('Failed to export ministries report')
+    }
+  }
+
+  const handleExportMinistry = async (ministryName) => {
+    try {
+      await exportMinistry(token, ministryName)
+    } catch (err) {
+      setError('Failed to export ministry report')
     }
   }
 
@@ -443,6 +507,15 @@ function AdminDashboard() {
             Volunteers
           </button>
           <button
+            className={`tab-button ${activeTab === 'reports' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reports')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Reports
+          </button>
+          <button
             className={`tab-button ${activeTab === 'admins' ? 'active' : ''}`}
             onClick={() => setActiveTab('admins')}
           >
@@ -611,17 +684,19 @@ function AdminDashboard() {
               )}
             </div>
           </>
-        ) : (
+        ) : activeTab === 'admins' ? (
           /* Admin Management Tab */
           <div className="admin-management">
             <div className="admin-section-header">
               <h2 className="section-title">Admin Users</h2>
-              <button className="add-admin-button" onClick={() => setShowAddAdminModal(true)}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                </svg>
-                Add New Admin
-              </button>
+              {isSuperAdmin && (
+                <button className="add-admin-button" onClick={() => setShowAddAdminModal(true)}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                  </svg>
+                  Add New Admin
+                </button>
+              )}
             </div>
 
             <div className="admin-list-section">
@@ -645,7 +720,10 @@ function AdminDashboard() {
                       <div key={admin.id} className={`admin-card ${!admin.is_active ? 'inactive' : ''}`}>
                         <div className="admin-card-header">
                           <div className="admin-info">
-                            <h3 className="admin-name">{admin.name || admin.email}</h3>
+                            <h3 className="admin-name">
+                              {admin.name || admin.email}
+                              {admin.is_super_admin && <span className="super-admin-badge">Super Admin</span>}
+                            </h3>
                             {admin.name && <p className="admin-email">{admin.email}</p>}
                           </div>
                           <span className={`status-badge ${admin.is_active ? 'active' : 'inactive'}`}>
@@ -654,12 +732,24 @@ function AdminDashboard() {
                         </div>
                         <div className="admin-card-footer">
                           <span className="admin-created">Added {formatDate(admin.created_at)}</span>
-                          <button
-                            className={`toggle-status-button ${admin.is_active ? 'deactivate' : 'activate'}`}
-                            onClick={() => handleToggleAdminStatus(admin)}
-                          >
-                            {admin.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
+                          <div className="admin-actions">
+                            {isSuperAdmin && !admin.is_super_admin && admin.is_active && (
+                              <button
+                                className="transfer-button"
+                                onClick={() => setShowTransferConfirm(admin)}
+                              >
+                                Transfer Ownership
+                              </button>
+                            )}
+                            {isSuperAdmin && !admin.is_super_admin && (
+                              <button
+                                className={`toggle-status-button ${admin.is_active ? 'deactivate' : 'activate'}`}
+                                onClick={() => handleToggleAdminStatus(admin)}
+                              >
+                                {admin.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -673,13 +763,16 @@ function AdminDashboard() {
                         <th>Name</th>
                         <th>Created</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        {isSuperAdmin && <th>Actions</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {adminUsers.map(admin => (
                         <tr key={admin.id} className={!admin.is_active ? 'inactive-row' : ''}>
-                          <td><strong>{admin.email}</strong></td>
+                          <td>
+                            <strong>{admin.email}</strong>
+                            {admin.is_super_admin && <span className="super-admin-badge">Super Admin</span>}
+                          </td>
                           <td>{admin.name || '—'}</td>
                           <td>{formatDate(admin.created_at)}</td>
                           <td>
@@ -687,14 +780,28 @@ function AdminDashboard() {
                               {admin.is_active ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td>
-                            <button
-                              className={`toggle-status-button ${admin.is_active ? 'deactivate' : 'activate'}`}
-                              onClick={() => handleToggleAdminStatus(admin)}
-                            >
-                              {admin.is_active ? 'Deactivate' : 'Activate'}
-                            </button>
-                          </td>
+                          {isSuperAdmin && (
+                            <td>
+                              <div className="table-actions">
+                                {!admin.is_super_admin && admin.is_active && (
+                                  <button
+                                    className="transfer-button"
+                                    onClick={() => setShowTransferConfirm(admin)}
+                                  >
+                                    Transfer
+                                  </button>
+                                )}
+                                {!admin.is_super_admin && (
+                                  <button
+                                    className={`toggle-status-button ${admin.is_active ? 'deactivate' : 'activate'}`}
+                                    onClick={() => handleToggleAdminStatus(admin)}
+                                  >
+                                    {admin.is_active ? 'Deactivate' : 'Activate'}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -702,6 +809,101 @@ function AdminDashboard() {
                 </>
               )}
             </div>
+          </div>
+        ) : (
+          /* Ministry Reports Tab */
+          <div className="reports-section">
+            <div className="reports-header">
+              <h2 className="section-title">Ministry Reports</h2>
+              <button className="export-button" onClick={handleExportAllMinistries}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
+                  <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
+                </svg>
+                Export All Ministries
+              </button>
+            </div>
+
+            {reportLoading ? (
+              <div className="loading-state">
+                <div className="loading-spinner"></div>
+                <span>Loading ministry report...</span>
+              </div>
+            ) : !ministryReport ? (
+              <div className="empty-state">
+                <p>No report data available</p>
+              </div>
+            ) : (
+              <>
+                <div className="report-summary">
+                  <div className="summary-stat">
+                    <span className="summary-value">{ministryReport.total_volunteers}</span>
+                    <span className="summary-label">Total Volunteers</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="summary-value">{ministryReport.ministries.filter(m => m.volunteer_count > 0).length}</span>
+                    <span className="summary-label">Active Ministries</span>
+                  </div>
+                </div>
+
+                <div className="ministry-report-list">
+                  {Object.entries(
+                    ministryReport.ministries.reduce((acc, m) => {
+                      if (!acc[m.category]) acc[m.category] = []
+                      acc[m.category].push(m)
+                      return acc
+                    }, {})
+                  ).map(([category, ministries]) => (
+                    <div key={category} className="report-category">
+                      <h3 className="report-category-title">{category}</h3>
+                      <div className="report-ministries">
+                        {ministries.map(ministry => (
+                          <div key={ministry.ministry_area} className="report-ministry-item">
+                            <div
+                              className="ministry-item-header"
+                              onClick={() => ministry.volunteer_count > 0 && toggleMinistryExpand(ministry.ministry_area)}
+                            >
+                              <div className="ministry-item-info">
+                                {ministry.volunteer_count > 0 && (
+                                  <span className={`expand-icon ${expandedMinistries[ministry.ministry_area] ? 'expanded' : ''}`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                    </svg>
+                                  </span>
+                                )}
+                                <span className="ministry-item-name">{ministry.ministry_area}</span>
+                                <span className={`volunteer-count-badge ${ministry.volunteer_count === 0 ? 'empty' : ''}`}>
+                                  {ministry.volunteer_count}
+                                </span>
+                              </div>
+                              {ministry.volunteer_count > 0 && (
+                                <button
+                                  className="export-ministry-button"
+                                  onClick={(e) => { e.stopPropagation(); handleExportMinistry(ministry.ministry_area); }}
+                                >
+                                  Export
+                                </button>
+                              )}
+                            </div>
+                            {expandedMinistries[ministry.ministry_area] && ministry.volunteers.length > 0 && (
+                              <div className="ministry-volunteers">
+                                {ministry.volunteers.map(vol => (
+                                  <div key={vol.id} className="ministry-volunteer-item">
+                                    <span className="vol-name">{vol.name}</span>
+                                    <span className="vol-email">{vol.email}</span>
+                                    <span className="vol-phone">{vol.phone}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -813,6 +1015,48 @@ function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Super Admin Confirm Modal */}
+      {showTransferConfirm && (
+        <div className="modal-overlay" onClick={() => setShowTransferConfirm(null)}>
+          <div className="modal-content transfer-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Transfer Super Admin</h2>
+              <button className="modal-close" onClick={() => setShowTransferConfirm(null)}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            </div>
+            <div className="transfer-confirm-content">
+              <div className="transfer-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p>Transfer super admin role to <strong>{showTransferConfirm.name || showTransferConfirm.email}</strong>?</p>
+              </div>
+              <p className="transfer-note">You will become a regular admin and lose the ability to manage other admins.</p>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => setShowTransferConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="confirm-delete-button"
+                onClick={() => handleTransferSuperAdmin(showTransferConfirm)}
+                disabled={transferLoading}
+              >
+                {transferLoading ? 'Transferring...' : 'Yes, Transfer'}
+              </button>
+            </div>
           </div>
         </div>
       )}

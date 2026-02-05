@@ -79,6 +79,13 @@ export const updateAdminUser = async (token, adminId, updateData) => {
   return response.data
 }
 
+export const transferSuperAdmin = async (token, targetAdminId) => {
+  const response = await api.post('/admin/transfer-super', { target_admin_id: targetAdminId }, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
 // Volunteer management endpoints
 
 export const getVolunteer = async (token, volunteerId) => {
@@ -114,6 +121,48 @@ export const addVolunteerNote = async (token, volunteerId, noteText) => {
     headers: { Authorization: `Bearer ${token}` }
   })
   return response.data
+}
+
+// Ministry Reports endpoints
+
+export const getMinistryReport = async (token) => {
+  const response = await api.get('/admin/reports/by-ministry', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const exportAllMinistries = async (token) => {
+  const response = await api.get('/admin/reports/export-all', {
+    headers: { Authorization: `Bearer ${token}` },
+    responseType: 'blob'
+  })
+
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', 'all_ministries_report.csv')
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
+
+export const exportMinistry = async (token, ministryName) => {
+  const response = await api.get(`/admin/reports/export-ministry/${encodeURIComponent(ministryName)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    responseType: 'blob'
+  })
+
+  const safeName = ministryName.replace(/[/\\]/g, '-')
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', `${safeName}_volunteers.csv`)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
 }
 
 export default api

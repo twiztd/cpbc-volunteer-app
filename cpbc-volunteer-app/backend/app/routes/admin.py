@@ -16,6 +16,7 @@ from ..schemas import (
     AdminUserResponse,
     AdminUserListResponse,
     AdminUserUpdate,
+    TransferSuperAdminRequest,
     VolunteerResponse,
     VolunteerListResponse,
     VolunteerUpdate,
@@ -23,6 +24,9 @@ from ..schemas import (
     VolunteerNoteCreate,
     VolunteerNoteResponse,
     VolunteerNoteListResponse,
+    VolunteerBasicInfo,
+    MinistryReportItem,
+    MinistryReportResponse,
     MessageResponse,
     ErrorResponse,
     MINISTRY_CATEGORIES
@@ -211,7 +215,8 @@ async def list_admin_users(
 
     return AdminUserListResponse(
         admins=admins,
-        total=len(admins)
+        total=len(admins),
+        current_user_is_super_admin=current_admin.is_super_admin
     )
 
 
@@ -220,8 +225,8 @@ async def list_admin_users(
     response_model=AdminUserResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new admin user",
-    description="Create a new admin user. Requires authentication.",
-    responses={400: {"model": ErrorResponse}}
+    description="Create a new admin user. Requires super admin.",
+    responses={400: {"model": ErrorResponse}, 403: {"model": ErrorResponse}}
 )
 async def create_admin_user(
     admin_data: AdminUserCreate,
@@ -230,10 +235,17 @@ async def create_admin_user(
 ):
     """
     Create a new admin user.
-    Only accessible by authenticated admins.
+    Only accessible by super admin.
     """
+    # Check super admin permission
+    if not current_admin.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only super admin can create new admin users"
+        )
+
     email_lower = admin_data.email.lower()
-    logger.info(f"Admin {current_admin.email} creating new admin: {email_lower}")
+    logger.info(f"Super admin {current_admin.email} creating new admin: {email_lower}")
 
     # Check if email already exists (case-insensitive)
     existing_admin = db.query(AdminUser).filter(
@@ -253,7 +265,8 @@ async def create_admin_user(
         email=email_lower,
         hashed_password=hashed_password,
         name=admin_data.name,
-        is_active=True
+        is_active=True,
+        is_super_admin=False
     )
 
     db.add(new_admin)
@@ -269,8 +282,8 @@ async def create_admin_user(
     "/users/{admin_id}",
     response_model=AdminUserResponse,
     summary="Update an admin user",
-    description="Update an admin user's status or name. Requires authentication.",
-    responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}}
+    description="Update an admin user's status. Requires super admin for activate/deactivate.",
+    responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}, 403: {"model": ErrorResponse}}
 )
 async def update_admin_user(
     admin_id: int,
@@ -279,9 +292,9 @@ async def update_admin_user(
     current_admin: AdminUser = Depends(get_current_admin_user)
 ):
     """
-    Update an admin user (activate/deactivate or change name).
-    Only accessible by authenticated admins.
-    Cannot deactivate yourself.
+    Update an admin user (activate/deactivate).
+    Only super admin can activate/deactivate other admins.
+    Cannot deactivate yourself or the super admin.
     """
     logger.info(f"Admin {current_admin.email} updating admin ID: {admin_id}")
 
@@ -294,11 +307,25 @@ async def update_admin_user(
             detail="Admin user not found"
         )
 
+    # Check super admin permission for status changes
+    if update_data.is_active is not None and not current_admin.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only super admin can activate/deactivate admin users"
+        )
+
     # Prevent deactivating yourself
     if update_data.is_active is False and admin_to_update.id == current_admin.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot deactivate your own account"
+        )
+
+    # Prevent deactivating the super admin
+    if update_data.is_active is False and admin_to_update.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot deactivate the super admin account"
         )
 
     # Update fields
@@ -314,6 +341,62 @@ async def update_admin_user(
     db.refresh(admin_to_update)
 
     return admin_to_update
+
+
+@router.post(
+    "/transfer-super",
+    response_model=MessageResponse,
+    summary="Transfer super admin role",
+    description="Transfer super admin role to another admin. Only super admin can do this.",
+    responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}}
+)
+async def transfer_super_admin(
+    transfer_data: TransferSuperAdminRequest,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Transfer super admin role to another admin.
+    Only the current super admin can do this.
+    """
+    # Check super admin permission
+    if not current_admin.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only super admin can transfer the super admin role"
+        )
+
+    # Cannot transfer to yourself
+    if transfer_data.target_admin_id == current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot transfer super admin role to yourself"
+        )
+
+    # Find target admin
+    target_admin = db.query(AdminUser).filter(AdminUser.id == transfer_data.target_admin_id).first()
+
+    if not target_admin:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target admin user not found"
+        )
+
+    if not target_admin.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot transfer super admin role to an inactive admin"
+        )
+
+    # Transfer the role
+    current_admin.is_super_admin = False
+    target_admin.is_super_admin = True
+
+    db.commit()
+
+    logger.info(f"Super admin role transferred from {current_admin.email} to {target_admin.email}")
+
+    return MessageResponse(message=f"Super admin role transferred to {target_admin.name or target_admin.email}")
 
 
 # ==================== Volunteer Management ====================
@@ -566,4 +649,247 @@ async def add_volunteer_note(
         admin_email=current_admin.email,
         note_text=new_note.note_text,
         created_at=new_note.created_at
+    )
+
+
+# ==================== Ministry Reports ====================
+
+@router.get(
+    "/reports/by-ministry",
+    response_model=MinistryReportResponse,
+    summary="Get volunteers grouped by ministry",
+    description="Get all ministries with volunteer counts and volunteer lists."
+)
+async def get_ministry_report(
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Get all ministries with their volunteers.
+    """
+    logger.info(f"Admin {current_admin.email} generating ministry report")
+
+    ministries = []
+    all_volunteer_ids = set()
+
+    # Iterate through all ministry categories and areas
+    for category, areas in MINISTRY_CATEGORIES.items():
+        for ministry_area in areas:
+            # Get volunteers for this ministry
+            volunteer_ministries = db.query(VolunteerMinistry).filter(
+                VolunteerMinistry.ministry_area == ministry_area,
+                VolunteerMinistry.category == category
+            ).all()
+
+            volunteers = []
+            for vm in volunteer_ministries:
+                volunteer = vm.volunteer
+                all_volunteer_ids.add(volunteer.id)
+                volunteers.append(VolunteerBasicInfo(
+                    id=volunteer.id,
+                    name=volunteer.name,
+                    email=volunteer.email,
+                    phone=volunteer.phone,
+                    signup_date=volunteer.signup_date
+                ))
+
+            ministries.append(MinistryReportItem(
+                ministry_area=ministry_area,
+                category=category,
+                volunteer_count=len(volunteers),
+                volunteers=volunteers
+            ))
+
+    return MinistryReportResponse(
+        ministries=ministries,
+        total_ministries=len(ministries),
+        total_volunteers=len(all_volunteer_ids)
+    )
+
+
+@router.get(
+    "/reports/by-ministry/{ministry_name}",
+    response_model=MinistryReportItem,
+    summary="Get volunteers for a specific ministry",
+    description="Get full volunteer details for a specific ministry area.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def get_ministry_volunteers(
+    ministry_name: str,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Get volunteers for a specific ministry area.
+    """
+    logger.info(f"Admin {current_admin.email} getting volunteers for ministry: {ministry_name}")
+
+    # Find the category for this ministry
+    category = None
+    for cat, areas in MINISTRY_CATEGORIES.items():
+        if ministry_name in areas:
+            category = cat
+            break
+
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ministry area '{ministry_name}' not found"
+        )
+
+    # Get volunteers for this ministry
+    volunteer_ministries = db.query(VolunteerMinistry).filter(
+        VolunteerMinistry.ministry_area == ministry_name,
+        VolunteerMinistry.category == category
+    ).all()
+
+    volunteers = []
+    for vm in volunteer_ministries:
+        volunteer = vm.volunteer
+        volunteers.append(VolunteerBasicInfo(
+            id=volunteer.id,
+            name=volunteer.name,
+            email=volunteer.email,
+            phone=volunteer.phone,
+            signup_date=volunteer.signup_date
+        ))
+
+    return MinistryReportItem(
+        ministry_area=ministry_name,
+        category=category,
+        volunteer_count=len(volunteers),
+        volunteers=volunteers
+    )
+
+
+@router.get(
+    "/reports/export-all",
+    summary="Export all ministries to CSV",
+    description="Export all ministries with their volunteers as a CSV file."
+)
+async def export_all_ministries_csv(
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Export all ministries with volunteers to CSV.
+    """
+    logger.info(f"Admin {current_admin.email} exporting all ministries report")
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow([
+        "Category",
+        "Ministry Area",
+        "Volunteer Name",
+        "Email",
+        "Phone",
+        "Signup Date"
+    ])
+
+    # Write data for each ministry
+    for category, areas in MINISTRY_CATEGORIES.items():
+        for ministry_area in areas:
+            volunteer_ministries = db.query(VolunteerMinistry).filter(
+                VolunteerMinistry.ministry_area == ministry_area,
+                VolunteerMinistry.category == category
+            ).all()
+
+            if volunteer_ministries:
+                for vm in volunteer_ministries:
+                    volunteer = vm.volunteer
+                    writer.writerow([
+                        category,
+                        ministry_area,
+                        volunteer.name,
+                        volunteer.email,
+                        volunteer.phone,
+                        volunteer.signup_date.strftime("%Y-%m-%d")
+                    ])
+            else:
+                # Include empty ministries
+                writer.writerow([
+                    category,
+                    ministry_area,
+                    "",
+                    "",
+                    "",
+                    ""
+                ])
+
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=all_ministries_report.csv"}
+    )
+
+
+@router.get(
+    "/reports/export-ministry/{ministry_name}",
+    summary="Export single ministry to CSV",
+    description="Export volunteers for a specific ministry as a CSV file.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def export_ministry_csv(
+    ministry_name: str,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Export volunteers for a specific ministry to CSV.
+    """
+    logger.info(f"Admin {current_admin.email} exporting ministry report: {ministry_name}")
+
+    # Find the category for this ministry
+    category = None
+    for cat, areas in MINISTRY_CATEGORIES.items():
+        if ministry_name in areas:
+            category = cat
+            break
+
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ministry area '{ministry_name}' not found"
+        )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow([
+        "Name",
+        "Email",
+        "Phone",
+        "Signup Date"
+    ])
+
+    # Get volunteers for this ministry
+    volunteer_ministries = db.query(VolunteerMinistry).filter(
+        VolunteerMinistry.ministry_area == ministry_name,
+        VolunteerMinistry.category == category
+    ).all()
+
+    for vm in volunteer_ministries:
+        volunteer = vm.volunteer
+        writer.writerow([
+            volunteer.name,
+            volunteer.email,
+            volunteer.phone,
+            volunteer.signup_date.strftime("%Y-%m-%d")
+        ])
+
+    output.seek(0)
+
+    # Sanitize filename
+    safe_name = ministry_name.replace("/", "-").replace("\\", "-")
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={safe_name}_volunteers.csv"}
     )

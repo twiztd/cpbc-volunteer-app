@@ -170,6 +170,7 @@ class AdminUserResponse(BaseModel):
     name: Optional[str]
     created_at: datetime
     is_active: bool
+    is_super_admin: bool
 
     class Config:
         from_attributes = True
@@ -179,12 +180,46 @@ class AdminUserListResponse(BaseModel):
     """Response schema for listing admin users."""
     admins: list[AdminUserResponse]
     total: int
+    current_user_is_super_admin: bool
 
 
 class AdminUserUpdate(BaseModel):
     """Request schema for updating an admin user."""
     is_active: Optional[bool] = None
     name: Optional[str] = None
+
+
+class TransferSuperAdminRequest(BaseModel):
+    """Request schema for transferring super admin role."""
+    target_admin_id: int
+
+
+# Ministry Report Schemas
+class VolunteerBasicInfo(BaseModel):
+    """Basic volunteer info for reports."""
+    id: int
+    name: str
+    email: str
+    phone: str
+    signup_date: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MinistryReportItem(BaseModel):
+    """Single ministry report with volunteer list."""
+    ministry_area: str
+    category: str
+    volunteer_count: int
+    volunteers: list[VolunteerBasicInfo]
+
+
+class MinistryReportResponse(BaseModel):
+    """Response schema for ministry reports."""
+    ministries: list[MinistryReportItem]
+    total_ministries: int
+    total_volunteers: int
 
 
 # Generic Response Schemas

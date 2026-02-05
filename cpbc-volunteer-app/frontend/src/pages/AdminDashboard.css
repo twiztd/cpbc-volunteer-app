@@ -1304,3 +1304,313 @@
     max-height: 95vh;
   }
 }
+
+/* ==================== SUPER ADMIN FEATURES ==================== */
+
+.super-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7c3aed;
+  background-color: rgba(124, 58, 237, 0.1);
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.transfer-button {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #7c3aed;
+  background-color: transparent;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.transfer-button:hover {
+  background-color: rgba(124, 58, 237, 0.1);
+}
+
+/* Transfer Modal */
+.transfer-modal {
+  max-width: 400px;
+}
+
+.transfer-confirm-content {
+  padding: 20px;
+}
+
+.transfer-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: #fef3c7;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.transfer-warning svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: #d97706;
+}
+
+.transfer-warning p {
+  margin: 0;
+  font-size: 14px;
+  color: #92400e;
+}
+
+.transfer-note {
+  font-size: 13px;
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+/* ==================== MINISTRY REPORTS ==================== */
+
+.reports-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.reports-header .section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.report-summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.summary-stat {
+  flex: 1;
+  min-width: 120px;
+  background-color: var(--color-background);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.summary-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
+.ministry-report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.report-category {
+  background-color: var(--color-background);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.report-category-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  padding: 14px 16px;
+  background-color: var(--color-background-alt);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.report-ministries {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-ministry-item {
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.report-ministry-item:last-child {
+  border-bottom: none;
+}
+
+.ministry-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ministry-item-header:hover {
+  background-color: var(--color-background-alt);
+}
+
+.ministry-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-light);
+  transition: transform 0.2s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.expand-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ministry-item-name {
+  font-size: 14px;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.volunteer-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  background-color: var(--color-primary);
+  border-radius: 100px;
+}
+
+.volunteer-count-badge.empty {
+  background-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.export-ministry-button {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background-color: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.export-ministry-button:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.ministry-volunteers {
+  background-color: var(--color-background-alt);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.ministry-volunteer-item {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 10px 16px 10px 44px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.ministry-volunteer-item:last-child {
+  border-bottom: none;
+}
+
+.vol-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.vol-email {
+  font-size: 13px;
+  color: var(--color-primary);
+}
+
+.vol-phone {
+  font-size: 13px;
+  color: var(--color-text-light);
+}
+
+@media (min-width: 640px) {
+  .ministry-volunteer-item {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .vol-name, .vol-email, .vol-phone {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 768px) {
+  .report-summary {
+    max-width: 400px;
+  }
+}
