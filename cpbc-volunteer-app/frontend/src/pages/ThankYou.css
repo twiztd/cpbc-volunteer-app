@@ -1,0 +1,261 @@
+/* ThankYou.css - Confirmation page styles */
+
+/* Page Container */
+.thank-you-page {
+  min-height: 100vh;
+  background-color: var(--color-background-alt, #f9fafb);
+  padding: 16px;
+  padding-bottom: 40px;
+}
+
+/* Main Container */
+.thank-you-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: var(--color-background, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Header Section */
+.thank-you-header {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: white;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.success-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.thank-you-heading {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.thank-you-message {
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: 0.95;
+}
+
+/* Summary Section */
+.summary-section {
+  padding: 24px;
+}
+
+.summary-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text, #1f2937);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-light, #e5e7eb);
+}
+
+/* Volunteer Info */
+.volunteer-info {
+  margin-bottom: 24px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border-light, #e5e7eb);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 14px;
+  color: var(--color-text-light, #6b7280);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 15px;
+  color: var(--color-text, #1f2937);
+  font-weight: 500;
+}
+
+/* Ministry Summary */
+.ministry-summary {
+  background-color: var(--color-background-alt, #f9fafb);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.ministry-summary-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text, #1f2937);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ministry-group {
+  margin-bottom: 20px;
+}
+
+.ministry-group:last-child {
+  margin-bottom: 0;
+}
+
+.ministry-category-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+  margin-bottom: 8px;
+}
+
+.ministry-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ministry-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 15px;
+  color: var(--color-text, #1f2937);
+}
+
+.check-icon {
+  width: 18px;
+  height: 18px;
+  color: #059669;
+  flex-shrink: 0;
+}
+
+/* Actions Section */
+.thank-you-actions {
+  padding: 24px;
+  background-color: var(--color-background-alt, #f9fafb);
+  border-top: 1px solid var(--color-border-light, #e5e7eb);
+  text-align: center;
+}
+
+.next-steps {
+  font-size: 14px;
+  color: var(--color-text-light, #6b7280);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.another-signup-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+  background-color: white;
+  border: 2px solid var(--color-primary, #2563eb);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.another-signup-button:hover {
+  background-color: var(--color-primary, #2563eb);
+  color: white;
+}
+
+.another-signup-button:active {
+  transform: scale(0.98);
+}
+
+/* Footer */
+.thank-you-footer {
+  padding: 20px 24px;
+  text-align: center;
+  border-top: 1px solid var(--color-border-light, #e5e7eb);
+}
+
+.thank-you-footer .church-name {
+  font-size: 13px;
+  color: var(--color-text-muted, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tablet and Desktop */
+@media (min-width: 480px) {
+  .thank-you-page {
+    padding: 24px;
+    padding-bottom: 48px;
+  }
+
+  .thank-you-header {
+    padding: 40px 32px;
+  }
+
+  .success-icon {
+    width: 72px;
+    height: 72px;
+  }
+
+  .success-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .thank-you-heading {
+    font-size: 32px;
+  }
+
+  .summary-section {
+    padding: 28px;
+  }
+
+  .ministry-summary {
+    padding: 24px;
+  }
+
+  .thank-you-actions {
+    padding: 28px;
+  }
+}
+
+@media (min-width: 768px) {
+  .thank-you-page {
+    padding: 40px;
+  }
+
+  .thank-you-container {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .thank-you-heading {
+    font-size: 36px;
+  }
+
+  .another-signup-button {
+    min-width: 240px;
+  }
+}

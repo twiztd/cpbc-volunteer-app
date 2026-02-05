@@ -1,0 +1,420 @@
+/* VolunteerForm.css - Mobile-first styles for CPBC Volunteer Signup */
+
+/* Color Variables */
+:root {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #3b82f6;
+  --color-accent: #d97706;
+  --color-accent-dark: #b45309;
+  --color-accent-light: #f59e0b;
+  --color-success: #059669;
+  --color-error: #dc2626;
+  --color-error-light: #fef2f2;
+  --color-error-border: #fecaca;
+  --color-text: #1f2937;
+  --color-text-light: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-background: #ffffff;
+  --color-background-alt: #f9fafb;
+  --color-border: #d1d5db;
+  --color-border-light: #e5e7eb;
+}
+
+/* Page Container */
+.volunteer-form-page {
+  min-height: 100vh;
+  background-color: var(--color-background-alt);
+  padding: 16px;
+  padding-bottom: 40px;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--color-text-light);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Form Container */
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: var(--color-background);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Header */
+.form-header {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.church-name {
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.main-heading {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.welcome-message {
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+/* Error Banner */
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  background-color: var(--color-error-light);
+  border-bottom: 1px solid var(--color-error-border);
+  color: var(--color-error);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.error-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Form Sections */
+.form-section {
+  padding: 24px 20px;
+}
+
+.contact-section {
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+.section-description {
+  font-size: 15px;
+  color: var(--color-text-light);
+  margin-bottom: 16px;
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.required {
+  color: var(--color-error);
+}
+
+/* Form Inputs */
+.form-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px; /* Prevents iOS zoom */
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.form-input.input-error {
+  border-color: var(--color-error);
+}
+
+.form-input.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+/* Field Errors */
+.field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--color-error);
+}
+
+/* Ministry Section */
+.ministry-error {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background-color: var(--color-error-light);
+  border: 1px solid var(--color-error-border);
+  border-radius: 6px;
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.ministry-categories {
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ministry-category {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.ministry-category:last-child {
+  border-bottom: none;
+}
+
+.ministry-category.category-alt {
+  background-color: var(--color-background-alt);
+}
+
+.category-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  margin-bottom: 12px;
+}
+
+.ministry-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Custom Checkboxes */
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  margin: 0 -12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.checkbox-label:hover {
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+.checkbox-label:active {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkbox-custom {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-background);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.checkbox-custom::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 7px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.15s ease;
+}
+
+.checkbox-input:checked + .checkbox-custom {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checkbox-input:checked + .checkbox-custom::after {
+  transform: rotate(45deg) scale(1);
+}
+
+.checkbox-input:focus + .checkbox-custom {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.checkbox-text {
+  font-size: 15px;
+  color: var(--color-text);
+  line-height: 1.4;
+  padding-top: 1px;
+}
+
+/* Form Actions */
+.form-actions {
+  padding: 24px 20px;
+  background-color: var(--color-background-alt);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* Submit Button */
+.submit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  color: white;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: var(--color-accent-dark);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Button Spinner */
+.button-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Tablet and Desktop Adjustments */
+@media (min-width: 480px) {
+  .volunteer-form-page {
+    padding: 24px;
+    padding-bottom: 48px;
+  }
+
+  .form-header {
+    padding: 32px 28px;
+  }
+
+  .main-heading {
+    font-size: 28px;
+  }
+
+  .form-section {
+    padding: 28px;
+  }
+
+  .form-actions {
+    padding: 28px;
+  }
+
+  .ministry-category {
+    padding: 20px;
+  }
+
+  .checkbox-label {
+    padding: 12px 16px;
+    margin: 0 -16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .volunteer-form-page {
+    padding: 40px;
+  }
+
+  .form-container {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .main-heading {
+    font-size: 32px;
+  }
+
+  .ministry-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 4px;
+  }
+
+  .submit-button {
+    max-width: 300px;
+    margin: 0 auto;
+  }
+}

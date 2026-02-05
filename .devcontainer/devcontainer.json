@@ -1,0 +1,18 @@
+{
+  "name": "CPBC Volunteer App",
+  "forwardPorts": [8080, 8000, 5173],
+  "portsAttributes": {
+    "8080": {
+      "label": "Frontend App",
+      "onAutoForward": "openBrowser"
+    },
+    "8000": {
+      "label": "Backend API",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "notify"
+    }
+  }
+}
