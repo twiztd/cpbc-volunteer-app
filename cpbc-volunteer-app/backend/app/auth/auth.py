@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 import bcrypt
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from dotenv import load_dotenv
 
 from ..database import get_db
@@ -105,7 +106,7 @@ async def get_current_admin_user(
         raise credentials_exception
 
     admin_user = db.query(AdminUser).filter(
-        AdminUser.email == email,
+        func.lower(AdminUser.email) == email.lower(),
         AdminUser.is_active == True
     ).first()
 
@@ -131,7 +132,7 @@ def create_admin_user(db: Session, email: str, password: str, name: Optional[str
     hashed_password = get_password_hash(password)
 
     admin_user = AdminUser(
-        email=email,
+        email=email.lower(),
         hashed_password=hashed_password,
         name=name
     )

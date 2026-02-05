@@ -46,8 +46,9 @@ async def admin_login(login_data: AdminLogin, db: Session = Depends(get_db)):
     """
     logger.info(f"Admin login attempt: {login_data.email}")
 
+    email_lower = login_data.email.lower()
     admin_user = db.query(AdminUser).filter(
-        AdminUser.email == login_data.email,
+        func.lower(AdminUser.email) == email_lower,
         AdminUser.is_active == True
     ).first()
 
@@ -224,11 +225,12 @@ async def create_admin_user(
     Create a new admin user.
     Only accessible by authenticated admins.
     """
-    logger.info(f"Admin {current_admin.email} creating new admin: {admin_data.email}")
+    email_lower = admin_data.email.lower()
+    logger.info(f"Admin {current_admin.email} creating new admin: {email_lower}")
 
-    # Check if email already exists
+    # Check if email already exists (case-insensitive)
     existing_admin = db.query(AdminUser).filter(
-        AdminUser.email == admin_data.email
+        func.lower(AdminUser.email) == email_lower
     ).first()
 
     if existing_admin:
@@ -237,11 +239,11 @@ async def create_admin_user(
             detail="An admin with this email already exists"
         )
 
-    # Create new admin user
+    # Create new admin user with lowercase email
     hashed_password = get_password_hash(admin_data.password)
 
     new_admin = AdminUser(
-        email=admin_data.email,
+        email=email_lower,
         hashed_password=hashed_password,
         name=admin_data.name,
         is_active=True
