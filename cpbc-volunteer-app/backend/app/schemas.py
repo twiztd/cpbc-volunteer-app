@@ -125,6 +125,18 @@ class AdminUserResponse(BaseModel):
         from_attributes = True
 
 
+class AdminUserListResponse(BaseModel):
+    """Response schema for listing admin users."""
+    admins: list[AdminUserResponse]
+    total: int
+
+
+class AdminUserUpdate(BaseModel):
+    """Request schema for updating an admin user."""
+    is_active: Optional[bool] = None
+    name: Optional[str] = None
+
+
 # Generic Response Schemas
 class MessageResponse(BaseModel):
     """Generic message response."""

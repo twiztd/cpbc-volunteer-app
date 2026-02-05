@@ -56,4 +56,27 @@ export const exportVolunteers = async (token) => {
   window.URL.revokeObjectURL(url)
 }
 
+// Admin user management endpoints
+
+export const getAdminUsers = async (token) => {
+  const response = await api.get('/admin/users', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const createAdminUser = async (token, adminData) => {
+  const response = await api.post('/admin/users', adminData, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const updateAdminUser = async (token, adminId, updateData) => {
+  const response = await api.patch(`/admin/users/${adminId}`, updateData, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
 export default api

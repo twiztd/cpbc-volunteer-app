@@ -12,6 +12,10 @@ from ..models import Volunteer, VolunteerMinistry, AdminUser
 from ..schemas import (
     AdminLogin,
     AdminTokenResponse,
+    AdminUserCreate,
+    AdminUserResponse,
+    AdminUserListResponse,
+    AdminUserUpdate,
     VolunteerResponse,
     VolunteerListResponse,
     ErrorResponse
@@ -19,7 +23,8 @@ from ..schemas import (
 from ..auth.auth import (
     verify_password,
     create_access_token,
-    get_current_admin_user
+    get_current_admin_user,
+    get_password_hash
 )
 
 logger = logging.getLogger(__name__)
@@ -174,3 +179,129 @@ async def export_volunteers_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=volunteers_export.csv"}
     )
+
+
+# ==================== Admin User Management ====================
+
+@router.get(
+    "/users",
+    response_model=AdminUserListResponse,
+    summary="List all admin users",
+    description="Get a list of all admin users. Requires authentication."
+)
+async def list_admin_users(
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    List all admin users.
+    Only accessible by authenticated admins.
+    """
+    logger.info(f"Admin {current_admin.email} listing admin users")
+
+    admins = db.query(AdminUser).order_by(AdminUser.created_at.desc()).all()
+
+    return AdminUserListResponse(
+        admins=admins,
+        total=len(admins)
+    )
+
+
+@router.post(
+    "/users",
+    response_model=AdminUserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new admin user",
+    description="Create a new admin user. Requires authentication.",
+    responses={400: {"model": ErrorResponse}}
+)
+async def create_admin_user(
+    admin_data: AdminUserCreate,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Create a new admin user.
+    Only accessible by authenticated admins.
+    """
+    logger.info(f"Admin {current_admin.email} creating new admin: {admin_data.email}")
+
+    # Check if email already exists
+    existing_admin = db.query(AdminUser).filter(
+        AdminUser.email == admin_data.email
+    ).first()
+
+    if existing_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An admin with this email already exists"
+        )
+
+    # Create new admin user
+    hashed_password = get_password_hash(admin_data.password)
+
+    new_admin = AdminUser(
+        email=admin_data.email,
+        hashed_password=hashed_password,
+        name=admin_data.name,
+        is_active=True
+    )
+
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
+
+    logger.info(f"Created new admin user: {new_admin.email}")
+
+    return new_admin
+
+
+@router.patch(
+    "/users/{admin_id}",
+    response_model=AdminUserResponse,
+    summary="Update an admin user",
+    description="Update an admin user's status or name. Requires authentication.",
+    responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}}
+)
+async def update_admin_user(
+    admin_id: int,
+    update_data: AdminUserUpdate,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Update an admin user (activate/deactivate or change name).
+    Only accessible by authenticated admins.
+    Cannot deactivate yourself.
+    """
+    logger.info(f"Admin {current_admin.email} updating admin ID: {admin_id}")
+
+    # Find the admin to update
+    admin_to_update = db.query(AdminUser).filter(AdminUser.id == admin_id).first()
+
+    if not admin_to_update:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin user not found"
+        )
+
+    # Prevent deactivating yourself
+    if update_data.is_active is False and admin_to_update.id == current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot deactivate your own account"
+        )
+
+    # Update fields
+    if update_data.is_active is not None:
+        admin_to_update.is_active = update_data.is_active
+        action = "activated" if update_data.is_active else "deactivated"
+        logger.info(f"Admin {admin_to_update.email} {action} by {current_admin.email}")
+
+    if update_data.name is not None:
+        admin_to_update.name = update_data.name
+
+    db.commit()
+    db.refresh(admin_to_update)
+
+    return admin_to_update
