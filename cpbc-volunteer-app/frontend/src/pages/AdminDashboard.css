@@ -1,0 +1,569 @@
+/* AdminDashboard.css - Matches VolunteerForm styling */
+
+/* Page Container */
+.admin-page {
+  min-height: 100vh;
+  background-color: var(--color-background-alt);
+}
+
+/* ==================== LOGIN PAGE ==================== */
+
+.login-page {
+  min-height: 100vh;
+  background-color: var(--color-background-alt);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 420px;
+  background-color: var(--color-background);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.login-header {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.login-header .church-name {
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.login-header .main-heading {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.login-form {
+  padding: 24px 20px;
+}
+
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background-color: var(--color-error-light);
+  border: 1px solid var(--color-error-border);
+  border-radius: 6px;
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.login-error svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.login-actions {
+  padding: 0 20px 24px;
+}
+
+/* ==================== DASHBOARD PAGE ==================== */
+
+.dashboard-page {
+  min-height: 100vh;
+  background-color: var(--color-background-alt);
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-title .church-name {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.header-title .main-heading {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background-color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logout-button:hover {
+  background-color: var(--color-background-alt);
+}
+
+.logout-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Dashboard Content */
+.dashboard-content {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Error Banner */
+.dashboard-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background-color: var(--color-error-light);
+  border: 1px solid var(--color-error-border);
+  border-radius: 8px;
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.dashboard-error svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+/* Stats Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background-color: var(--color-background);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
+/* Filters Section */
+.filters-section {
+  background-color: var(--color-background);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.filters-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-group {
+  flex: 1;
+}
+
+.filter-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-light);
+  margin-bottom: 6px;
+}
+
+.filter-select,
+.filter-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.export-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.export-button:hover {
+  background-color: var(--color-accent-dark);
+}
+
+.export-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Volunteers List */
+.volunteers-section {
+  background-color: var(--color-background);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.volunteers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.volunteers-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.volunteers-count {
+  font-size: 14px;
+  color: var(--color-text-light);
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--color-text-light);
+}
+
+.loading-state .loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-light);
+}
+
+.empty-state svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Volunteer Cards (Mobile) */
+.volunteer-cards {
+  display: flex;
+  flex-direction: column;
+}
+
+.volunteer-card {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.volunteer-card:last-child {
+  border-bottom: none;
+}
+
+.volunteer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.volunteer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.volunteer-date {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.volunteer-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.volunteer-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text-light);
+}
+
+.volunteer-contact-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.volunteer-contact-item a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.volunteer-contact-item a:hover {
+  text-decoration: underline;
+}
+
+.volunteer-ministries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ministry-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary-dark);
+  background-color: rgba(37, 99, 235, 0.1);
+  border-radius: 100px;
+}
+
+/* Desktop Table */
+.volunteers-table {
+  display: none;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.volunteers-table th,
+.volunteers-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.volunteers-table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: var(--color-background-alt);
+}
+
+.volunteers-table td {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.volunteers-table tbody tr:hover {
+  background-color: var(--color-background-alt);
+}
+
+.volunteers-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-ministries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 300px;
+}
+
+/* Responsive */
+@media (min-width: 480px) {
+  .login-page {
+    padding: 24px;
+  }
+
+  .login-header {
+    padding: 32px 28px;
+  }
+
+  .login-header .main-heading {
+    font-size: 28px;
+  }
+
+  .login-form {
+    padding: 28px;
+  }
+
+  .login-actions {
+    padding: 0 28px 28px;
+  }
+
+  .dashboard-header {
+    padding: 24px;
+  }
+
+  .header-title .main-heading {
+    font-size: 24px;
+  }
+
+  .dashboard-content {
+    padding: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .filters-row {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .filter-actions {
+    flex: 0 0 auto;
+  }
+
+  .export-button {
+    flex: 0 0 auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .login-container {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .dashboard-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+  }
+
+  .header-top {
+    flex: 1;
+  }
+
+  .header-title .main-heading {
+    font-size: 28px;
+  }
+
+  .dashboard-content {
+    padding: 32px;
+  }
+
+  .stat-card {
+    padding: 20px;
+  }
+
+  .stat-value {
+    font-size: 36px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+  }
+
+  /* Show table, hide cards on desktop */
+  .volunteer-cards {
+    display: none;
+  }
+
+  .volunteers-table {
+    display: table;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
