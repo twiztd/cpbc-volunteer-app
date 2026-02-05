@@ -837,9 +837,9 @@ function AdminDashboard() {
               </div>
             ) : (
               <>
-                <form className="modal-form" onSubmit={handleSaveVolunteer}>
+                <div className="modal-body">
                   {editVolunteerError && (
-                    <div className="login-error">
+                    <div className="login-error" style={{ margin: '0 0 16px 0' }}>
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
                       </svg>
@@ -847,51 +847,55 @@ function AdminDashboard() {
                     </div>
                   )}
 
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="edit-volunteer-name">
-                      Name <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="edit-volunteer-name"
-                      className="form-input"
-                      value={editVolunteerData.name}
-                      onChange={(e) => setEditVolunteerData(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                    />
+                  {/* Contact Info Section */}
+                  <div className="edit-section">
+                    <h3 className="edit-section-title">Contact Information</h3>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="edit-volunteer-name">
+                        Name <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="edit-volunteer-name"
+                        className="form-input"
+                        value={editVolunteerData.name}
+                        onChange={(e) => setEditVolunteerData(prev => ({ ...prev, name: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="edit-volunteer-email">
+                        Email <span className="required">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        id="edit-volunteer-email"
+                        className="form-input"
+                        value={editVolunteerData.email}
+                        onChange={(e) => setEditVolunteerData(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="edit-volunteer-phone">
+                        Phone <span className="required">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        id="edit-volunteer-phone"
+                        className="form-input"
+                        value={editVolunteerData.phone}
+                        onChange={(e) => setEditVolunteerData(prev => ({ ...prev, phone: e.target.value }))}
+                        required
+                      />
+                    </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="edit-volunteer-email">
-                      Email <span className="required">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      id="edit-volunteer-email"
-                      className="form-input"
-                      value={editVolunteerData.email}
-                      onChange={(e) => setEditVolunteerData(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="edit-volunteer-phone">
-                      Phone <span className="required">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      id="edit-volunteer-phone"
-                      className="form-input"
-                      value={editVolunteerData.phone}
-                      onChange={(e) => setEditVolunteerData(prev => ({ ...prev, phone: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  {/* Ministry Areas Selection */}
-                  <div className="form-group">
-                    <label className="form-label">Ministry Areas</label>
+                  {/* Ministry Areas Section */}
+                  <div className="edit-section">
+                    <h3 className="edit-section-title">Ministry Areas</h3>
                     <div className="ministry-checkboxes">
                       {Object.entries(ministryAreas).map(([category, ministries]) => (
                         <div key={category} className="ministry-category">
@@ -912,42 +916,42 @@ function AdminDashboard() {
                       ))}
                     </div>
                   </div>
-                </form>
 
-                {/* Notes Section */}
-                <div className="notes-section">
-                  <h3 className="notes-title">Notes</h3>
-                  <div className="add-note">
-                    <textarea
-                      className="note-input"
-                      placeholder="Add a note about this volunteer..."
-                      value={newNoteText}
-                      onChange={(e) => setNewNoteText(e.target.value)}
-                      rows={3}
-                    />
-                    <button
-                      type="button"
-                      className="add-note-button"
-                      onClick={handleAddNote}
-                      disabled={!newNoteText.trim() || editVolunteerLoading}
-                    >
-                      Add Note
-                    </button>
-                  </div>
-                  <div className="notes-list">
-                    {editVolunteerNotes.length === 0 ? (
-                      <p className="no-notes">No notes yet</p>
-                    ) : (
-                      editVolunteerNotes.map(note => (
-                        <div key={note.id} className="note-item">
-                          <div className="note-header">
-                            <span className="note-author">{note.admin_name || note.admin_email || 'Admin'}</span>
-                            <span className="note-date">{formatDate(note.created_at)}</span>
+                  {/* Notes Section */}
+                  <div className="edit-section notes-section">
+                    <h3 className="edit-section-title">Notes</h3>
+                    <div className="add-note">
+                      <textarea
+                        className="note-input"
+                        placeholder="Add a note about this volunteer..."
+                        value={newNoteText}
+                        onChange={(e) => setNewNoteText(e.target.value)}
+                        rows={3}
+                      />
+                      <button
+                        type="button"
+                        className="add-note-button"
+                        onClick={handleAddNote}
+                        disabled={!newNoteText.trim() || editVolunteerLoading}
+                      >
+                        Add Note
+                      </button>
+                    </div>
+                    <div className="notes-list">
+                      {editVolunteerNotes.length === 0 ? (
+                        <p className="no-notes">No notes yet</p>
+                      ) : (
+                        editVolunteerNotes.map(note => (
+                          <div key={note.id} className="note-item">
+                            <div className="note-header">
+                              <span className="note-author">{note.admin_name || note.admin_email || 'Admin'}</span>
+                              <span className="note-date">{formatDate(note.created_at)}</span>
+                            </div>
+                            <p className="note-text">{note.note_text}</p>
                           </div>
-                          <p className="note-text">{note.note_text}</p>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
 
