@@ -17,6 +17,7 @@ class Volunteer(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     ministries = relationship("VolunteerMinistry", back_populates="volunteer", cascade="all, delete-orphan")
+    notes = relationship("VolunteerNote", back_populates="volunteer", cascade="all, delete-orphan")
 
 
 class VolunteerMinistry(Base):
@@ -41,3 +42,19 @@ class AdminUser(Base):
     name = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+
+    notes = relationship("VolunteerNote", back_populates="admin")
+
+
+class VolunteerNote(Base):
+    """Notes added by admins to volunteers."""
+    __tablename__ = "volunteer_notes"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    volunteer_id = Column(Integer, ForeignKey("volunteers.id", ondelete="CASCADE"), nullable=False)
+    admin_id = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True)
+    note_text = Column(String(2000), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    volunteer = relationship("Volunteer", back_populates="notes")
+    admin = relationship("AdminUser", back_populates="notes")

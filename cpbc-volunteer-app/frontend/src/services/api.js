@@ -79,4 +79,41 @@ export const updateAdminUser = async (token, adminId, updateData) => {
   return response.data
 }
 
+// Volunteer management endpoints
+
+export const getVolunteer = async (token, volunteerId) => {
+  const response = await api.get(`/admin/volunteers/${volunteerId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const updateVolunteer = async (token, volunteerId, updateData) => {
+  const response = await api.patch(`/admin/volunteers/${volunteerId}`, updateData, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const deleteVolunteer = async (token, volunteerId) => {
+  const response = await api.delete(`/admin/volunteers/${volunteerId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const getVolunteerNotes = async (token, volunteerId) => {
+  const response = await api.get(`/admin/volunteers/${volunteerId}/notes`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const addVolunteerNote = async (token, volunteerId, noteText) => {
+  const response = await api.post(`/admin/volunteers/${volunteerId}/notes`, { note_text: noteText }, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
 export default api

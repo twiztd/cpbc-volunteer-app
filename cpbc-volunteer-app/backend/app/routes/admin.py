@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ..database import get_db
-from ..models import Volunteer, VolunteerMinistry, AdminUser
+from ..models import Volunteer, VolunteerMinistry, AdminUser, VolunteerNote
 from ..schemas import (
     AdminLogin,
     AdminTokenResponse,
@@ -18,7 +18,14 @@ from ..schemas import (
     AdminUserUpdate,
     VolunteerResponse,
     VolunteerListResponse,
-    ErrorResponse
+    VolunteerUpdate,
+    VolunteerDetailResponse,
+    VolunteerNoteCreate,
+    VolunteerNoteResponse,
+    VolunteerNoteListResponse,
+    MessageResponse,
+    ErrorResponse,
+    MINISTRY_CATEGORIES
 )
 from ..auth.auth import (
     verify_password,
@@ -307,3 +314,256 @@ async def update_admin_user(
     db.refresh(admin_to_update)
 
     return admin_to_update
+
+
+# ==================== Volunteer Management ====================
+
+@router.get(
+    "/volunteers/{volunteer_id}",
+    response_model=VolunteerDetailResponse,
+    summary="Get a single volunteer",
+    description="Get a volunteer with all details including notes.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def get_volunteer(
+    volunteer_id: int,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Get a single volunteer by ID with all details.
+    """
+    logger.info(f"Admin {current_admin.email} getting volunteer ID: {volunteer_id}")
+
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
+
+    if not volunteer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer not found"
+        )
+
+    # Build response with notes including admin info
+    notes_response = []
+    for note in volunteer.notes:
+        notes_response.append(VolunteerNoteResponse(
+            id=note.id,
+            volunteer_id=note.volunteer_id,
+            admin_id=note.admin_id,
+            admin_name=note.admin.name if note.admin else None,
+            admin_email=note.admin.email if note.admin else None,
+            note_text=note.note_text,
+            created_at=note.created_at
+        ))
+
+    return VolunteerDetailResponse(
+        id=volunteer.id,
+        name=volunteer.name,
+        phone=volunteer.phone,
+        email=volunteer.email,
+        signup_date=volunteer.signup_date,
+        created_at=volunteer.created_at,
+        updated_at=volunteer.updated_at,
+        ministries=volunteer.ministries,
+        notes=notes_response
+    )
+
+
+@router.patch(
+    "/volunteers/{volunteer_id}",
+    response_model=VolunteerResponse,
+    summary="Update a volunteer",
+    description="Update volunteer info and/or ministry selections.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def update_volunteer(
+    volunteer_id: int,
+    update_data: VolunteerUpdate,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Update a volunteer's info and/or ministry selections.
+    """
+    logger.info(f"Admin {current_admin.email} updating volunteer ID: {volunteer_id}")
+
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
+
+    if not volunteer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer not found"
+        )
+
+    # Update basic fields
+    if update_data.name is not None:
+        volunteer.name = update_data.name
+    if update_data.phone is not None:
+        volunteer.phone = update_data.phone
+    if update_data.email is not None:
+        volunteer.email = update_data.email
+
+    # Update ministry selections if provided
+    if update_data.ministries is not None:
+        # Validate ministry selections
+        for ministry in update_data.ministries:
+            if ministry.category not in MINISTRY_CATEGORIES:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid category: {ministry.category}"
+                )
+            if ministry.ministry_area not in MINISTRY_CATEGORIES[ministry.category]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid ministry area: {ministry.ministry_area}"
+                )
+
+        # Delete existing ministry selections
+        db.query(VolunteerMinistry).filter(
+            VolunteerMinistry.volunteer_id == volunteer_id
+        ).delete()
+
+        # Add new ministry selections
+        for ministry in update_data.ministries:
+            new_ministry = VolunteerMinistry(
+                volunteer_id=volunteer_id,
+                ministry_area=ministry.ministry_area,
+                category=ministry.category
+            )
+            db.add(new_ministry)
+
+    db.commit()
+    db.refresh(volunteer)
+
+    logger.info(f"Updated volunteer {volunteer_id} by {current_admin.email}")
+
+    return volunteer
+
+
+@router.delete(
+    "/volunteers/{volunteer_id}",
+    response_model=MessageResponse,
+    summary="Delete a volunteer",
+    description="Permanently delete a volunteer and all associated data.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def delete_volunteer(
+    volunteer_id: int,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Delete a volunteer permanently.
+    """
+    logger.info(f"Admin {current_admin.email} deleting volunteer ID: {volunteer_id}")
+
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
+
+    if not volunteer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer not found"
+        )
+
+    volunteer_name = volunteer.name
+    db.delete(volunteer)
+    db.commit()
+
+    logger.info(f"Deleted volunteer {volunteer_id} ({volunteer_name}) by {current_admin.email}")
+
+    return MessageResponse(message=f"Volunteer '{volunteer_name}' has been deleted")
+
+
+# ==================== Volunteer Notes ====================
+
+@router.get(
+    "/volunteers/{volunteer_id}/notes",
+    response_model=VolunteerNoteListResponse,
+    summary="Get volunteer notes",
+    description="Get all notes for a volunteer.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def get_volunteer_notes(
+    volunteer_id: int,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Get all notes for a volunteer.
+    """
+    logger.info(f"Admin {current_admin.email} getting notes for volunteer ID: {volunteer_id}")
+
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
+
+    if not volunteer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer not found"
+        )
+
+    notes_response = []
+    for note in volunteer.notes:
+        notes_response.append(VolunteerNoteResponse(
+            id=note.id,
+            volunteer_id=note.volunteer_id,
+            admin_id=note.admin_id,
+            admin_name=note.admin.name if note.admin else None,
+            admin_email=note.admin.email if note.admin else None,
+            note_text=note.note_text,
+            created_at=note.created_at
+        ))
+
+    return VolunteerNoteListResponse(
+        notes=notes_response,
+        total=len(notes_response)
+    )
+
+
+@router.post(
+    "/volunteers/{volunteer_id}/notes",
+    response_model=VolunteerNoteResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a note to a volunteer",
+    description="Add a new note to a volunteer.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def add_volunteer_note(
+    volunteer_id: int,
+    note_data: VolunteerNoteCreate,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Add a note to a volunteer.
+    """
+    logger.info(f"Admin {current_admin.email} adding note to volunteer ID: {volunteer_id}")
+
+    volunteer = db.query(Volunteer).filter(Volunteer.id == volunteer_id).first()
+
+    if not volunteer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer not found"
+        )
+
+    new_note = VolunteerNote(
+        volunteer_id=volunteer_id,
+        admin_id=current_admin.id,
+        note_text=note_data.note_text
+    )
+
+    db.add(new_note)
+    db.commit()
+    db.refresh(new_note)
+
+    logger.info(f"Added note to volunteer {volunteer_id} by {current_admin.email}")
+
+    return VolunteerNoteResponse(
+        id=new_note.id,
+        volunteer_id=new_note.volunteer_id,
+        admin_id=new_note.admin_id,
+        admin_name=current_admin.name,
+        admin_email=current_admin.email,
+        note_text=new_note.note_text,
+        created_at=new_note.created_at
+    )

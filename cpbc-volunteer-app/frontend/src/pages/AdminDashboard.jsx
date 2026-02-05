@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { adminLogin, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser } from '../services/api'
+import { adminLogin, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
@@ -22,6 +22,16 @@ function AdminDashboard() {
   const [newAdminData, setNewAdminData] = useState({ email: '', password: '', confirmPassword: '', name: '' })
   const [newAdminError, setNewAdminError] = useState(null)
   const [newAdminLoading, setNewAdminLoading] = useState(false)
+
+  // Volunteer edit modal state
+  const [showEditVolunteerModal, setShowEditVolunteerModal] = useState(false)
+  const [selectedVolunteer, setSelectedVolunteer] = useState(null)
+  const [editVolunteerData, setEditVolunteerData] = useState({ name: '', email: '', phone: '', ministries: [] })
+  const [editVolunteerNotes, setEditVolunteerNotes] = useState([])
+  const [newNoteText, setNewNoteText] = useState('')
+  const [editVolunteerLoading, setEditVolunteerLoading] = useState(false)
+  const [editVolunteerError, setEditVolunteerError] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     if (token) {
@@ -165,6 +175,111 @@ function AdminDashboard() {
       loadAdminUsers()
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update admin status')
+    }
+  }
+
+  // Volunteer edit handlers
+  const handleOpenEditVolunteer = async (volunteer) => {
+    setEditVolunteerLoading(true)
+    setEditVolunteerError(null)
+    setShowEditVolunteerModal(true)
+    setShowDeleteConfirm(false)
+    setNewNoteText('')
+
+    try {
+      const data = await getVolunteer(token, volunteer.id)
+      setSelectedVolunteer(data)
+      setEditVolunteerData({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        ministries: data.ministries.map(m => ({ ministry_area: m.ministry_area, category: m.category }))
+      })
+      setEditVolunteerNotes(data.notes || [])
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleLogout()
+      } else {
+        setEditVolunteerError('Failed to load volunteer details')
+      }
+    } finally {
+      setEditVolunteerLoading(false)
+    }
+  }
+
+  const handleCloseEditVolunteer = () => {
+    setShowEditVolunteerModal(false)
+    setSelectedVolunteer(null)
+    setEditVolunteerData({ name: '', email: '', phone: '', ministries: [] })
+    setEditVolunteerNotes([])
+    setEditVolunteerError(null)
+    setShowDeleteConfirm(false)
+    setNewNoteText('')
+  }
+
+  const handleMinistryToggle = (ministryArea, category) => {
+    setEditVolunteerData(prev => {
+      const exists = prev.ministries.some(m => m.ministry_area === ministryArea)
+      if (exists) {
+        return {
+          ...prev,
+          ministries: prev.ministries.filter(m => m.ministry_area !== ministryArea)
+        }
+      } else {
+        return {
+          ...prev,
+          ministries: [...prev.ministries, { ministry_area: ministryArea, category }]
+        }
+      }
+    })
+  }
+
+  const handleSaveVolunteer = async (e) => {
+    e.preventDefault()
+    setEditVolunteerError(null)
+    setEditVolunteerLoading(true)
+
+    try {
+      await updateVolunteer(token, selectedVolunteer.id, {
+        name: editVolunteerData.name,
+        email: editVolunteerData.email,
+        phone: editVolunteerData.phone,
+        ministries: editVolunteerData.ministries
+      })
+      handleCloseEditVolunteer()
+      loadVolunteers()
+    } catch (err) {
+      setEditVolunteerError(err.response?.data?.detail || 'Failed to update volunteer')
+    } finally {
+      setEditVolunteerLoading(false)
+    }
+  }
+
+  const handleDeleteVolunteer = async () => {
+    setEditVolunteerLoading(true)
+    try {
+      await deleteVolunteer(token, selectedVolunteer.id)
+      handleCloseEditVolunteer()
+      loadVolunteers()
+    } catch (err) {
+      setEditVolunteerError(err.response?.data?.detail || 'Failed to delete volunteer')
+    } finally {
+      setEditVolunteerLoading(false)
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!newNoteText.trim()) return
+
+    setEditVolunteerLoading(true)
+    try {
+      const newNote = await addVolunteerNote(token, selectedVolunteer.id, newNoteText.trim())
+      setEditVolunteerNotes(prev => [newNote, ...prev])
+      setNewNoteText('')
+    } catch (err) {
+      setEditVolunteerError(err.response?.data?.detail || 'Failed to add note')
+    } finally {
+      setEditVolunteerLoading(false)
     }
   }
 
@@ -430,7 +545,7 @@ function AdminDashboard() {
                   {/* Mobile Cards */}
                   <div className="volunteer-cards">
                     {volunteers.map(volunteer => (
-                      <div key={volunteer.id} className="volunteer-card">
+                      <div key={volunteer.id} className="volunteer-card clickable" onClick={() => handleOpenEditVolunteer(volunteer)}>
                         <div className="volunteer-card-header">
                           <h3 className="volunteer-name">{volunteer.name}</h3>
                           <span className="volunteer-date">{formatDate(volunteer.signup_date)}</span>
@@ -441,13 +556,13 @@ function AdminDashboard() {
                               <path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.162V6a2 2 0 00-2-2H3z" />
                               <path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" />
                             </svg>
-                            <a href={`mailto:${volunteer.email}`}>{volunteer.email}</a>
+                            <span>{volunteer.email}</span>
                           </div>
                           <div className="volunteer-contact-item">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.933.267c-.41.117-.643.555-.48.95a11.542 11.542 0 006.254 6.254c.395.163.833-.07.95-.48l.267-.933a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-1.149 0-2.263-.15-3.326-.43A13.022 13.022 0 012.43 8.326 13.019 13.019 0 012 5V3.5z" clipRule="evenodd" />
                             </svg>
-                            <a href={`tel:${volunteer.phone}`}>{volunteer.phone}</a>
+                            <span>{volunteer.phone}</span>
                           </div>
                         </div>
                         <div className="volunteer-ministries">
@@ -474,13 +589,9 @@ function AdminDashboard() {
                     </thead>
                     <tbody>
                       {volunteers.map(volunteer => (
-                        <tr key={volunteer.id}>
+                        <tr key={volunteer.id} className="clickable" onClick={() => handleOpenEditVolunteer(volunteer)}>
                           <td><strong>{volunteer.name}</strong></td>
-                          <td>
-                            <a href={`mailto:${volunteer.email}`} style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
-                              {volunteer.email}
-                            </a>
-                          </td>
+                          <td>{volunteer.email}</td>
                           <td>{volunteer.phone}</td>
                           <td>{formatDate(volunteer.signup_date)}</td>
                           <td>
@@ -702,6 +813,194 @@ function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Volunteer Modal */}
+      {showEditVolunteerModal && (
+        <div className="modal-overlay" onClick={handleCloseEditVolunteer}>
+          <div className="modal-content edit-volunteer-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Volunteer</h2>
+              <button className="modal-close" onClick={handleCloseEditVolunteer}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            </div>
+
+            {editVolunteerLoading && !selectedVolunteer ? (
+              <div className="modal-loading">
+                <div className="loading-spinner"></div>
+                <span>Loading volunteer details...</span>
+              </div>
+            ) : (
+              <>
+                <form className="modal-form" onSubmit={handleSaveVolunteer}>
+                  {editVolunteerError && (
+                    <div className="login-error">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                      </svg>
+                      <span>{editVolunteerError}</span>
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-volunteer-name">
+                      Name <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-volunteer-name"
+                      className="form-input"
+                      value={editVolunteerData.name}
+                      onChange={(e) => setEditVolunteerData(prev => ({ ...prev, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-volunteer-email">
+                      Email <span className="required">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="edit-volunteer-email"
+                      className="form-input"
+                      value={editVolunteerData.email}
+                      onChange={(e) => setEditVolunteerData(prev => ({ ...prev, email: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-volunteer-phone">
+                      Phone <span className="required">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="edit-volunteer-phone"
+                      className="form-input"
+                      value={editVolunteerData.phone}
+                      onChange={(e) => setEditVolunteerData(prev => ({ ...prev, phone: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  {/* Ministry Areas Selection */}
+                  <div className="form-group">
+                    <label className="form-label">Ministry Areas</label>
+                    <div className="ministry-checkboxes">
+                      {Object.entries(ministryAreas).map(([category, ministries]) => (
+                        <div key={category} className="ministry-category">
+                          <h4 className="category-title">{category}</h4>
+                          <div className="ministry-options">
+                            {ministries.map(ministry => (
+                              <label key={ministry} className="ministry-checkbox">
+                                <input
+                                  type="checkbox"
+                                  checked={editVolunteerData.ministries.some(m => m.ministry_area === ministry)}
+                                  onChange={() => handleMinistryToggle(ministry, category)}
+                                />
+                                <span className="checkbox-label">{ministry}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </form>
+
+                {/* Notes Section */}
+                <div className="notes-section">
+                  <h3 className="notes-title">Notes</h3>
+                  <div className="add-note">
+                    <textarea
+                      className="note-input"
+                      placeholder="Add a note about this volunteer..."
+                      value={newNoteText}
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                      rows={3}
+                    />
+                    <button
+                      type="button"
+                      className="add-note-button"
+                      onClick={handleAddNote}
+                      disabled={!newNoteText.trim() || editVolunteerLoading}
+                    >
+                      Add Note
+                    </button>
+                  </div>
+                  <div className="notes-list">
+                    {editVolunteerNotes.length === 0 ? (
+                      <p className="no-notes">No notes yet</p>
+                    ) : (
+                      editVolunteerNotes.map(note => (
+                        <div key={note.id} className="note-item">
+                          <div className="note-header">
+                            <span className="note-author">{note.admin_name || note.admin_email || 'Admin'}</span>
+                            <span className="note-date">{formatDate(note.created_at)}</span>
+                          </div>
+                          <p className="note-text">{note.note_text}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="modal-actions edit-volunteer-actions">
+                  {!showDeleteConfirm ? (
+                    <>
+                      <button
+                        type="button"
+                        className="delete-button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        Delete
+                      </button>
+                      <div className="action-spacer"></div>
+                      <button
+                        type="button"
+                        className="cancel-button"
+                        onClick={handleCloseEditVolunteer}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="submit-button"
+                        disabled={editVolunteerLoading}
+                        onClick={handleSaveVolunteer}
+                      >
+                        {editVolunteerLoading ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="delete-confirm-text">Delete this volunteer?</span>
+                      <button
+                        type="button"
+                        className="cancel-button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="confirm-delete-button"
+                        onClick={handleDeleteVolunteer}
+                        disabled={editVolunteerLoading}
+                      >
+                        {editVolunteerLoading ? 'Deleting...' : 'Yes, Delete'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

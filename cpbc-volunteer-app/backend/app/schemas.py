@@ -87,6 +87,56 @@ class VolunteerListResponse(BaseModel):
     total: int
 
 
+class VolunteerUpdate(BaseModel):
+    """Request schema for updating a volunteer."""
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    ministries: Optional[list[MinistrySelection]] = None
+
+
+# Volunteer Note Schemas
+class VolunteerNoteCreate(BaseModel):
+    """Request schema for creating a note on a volunteer."""
+    note_text: str
+
+
+class VolunteerNoteResponse(BaseModel):
+    """Response schema for a volunteer note."""
+    id: int
+    volunteer_id: int
+    admin_id: Optional[int]
+    admin_name: Optional[str] = None
+    admin_email: Optional[str] = None
+    note_text: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class VolunteerNoteListResponse(BaseModel):
+    """Response schema for listing volunteer notes."""
+    notes: list[VolunteerNoteResponse]
+    total: int
+
+
+class VolunteerDetailResponse(BaseModel):
+    """Response schema for a volunteer with notes."""
+    id: int
+    name: str
+    phone: str
+    email: str
+    signup_date: datetime
+    created_at: datetime
+    updated_at: datetime
+    ministries: list[VolunteerMinistryResponse]
+    notes: list[VolunteerNoteResponse]
+
+    class Config:
+        from_attributes = True
+
+
 # Ministry Area Schemas
 class MinistryAreasResponse(BaseModel):
     """Response schema for ministry categories and areas."""

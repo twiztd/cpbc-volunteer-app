@@ -966,3 +966,279 @@
     justify-content: flex-start;
   }
 }
+
+/* ==================== CLICKABLE ROWS/CARDS ==================== */
+
+.volunteer-card.clickable,
+.volunteers-table tbody tr.clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.volunteer-card.clickable:hover {
+  background-color: var(--color-background-alt);
+}
+
+.volunteers-table tbody tr.clickable:hover {
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+/* ==================== EDIT VOLUNTEER MODAL ==================== */
+
+.edit-volunteer-modal {
+  max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.edit-volunteer-modal .modal-form {
+  flex: 0 0 auto;
+  max-height: none;
+  overflow: visible;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--color-text-light);
+}
+
+.modal-loading .loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+/* Ministry Checkboxes */
+.ministry-checkboxes {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.ministry-category {
+  margin-bottom: 16px;
+}
+
+.ministry-category:last-child {
+  margin-bottom: 0;
+}
+
+.category-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.ministry-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ministry-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.ministry-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+/* Notes Section */
+.notes-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.notes-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+}
+
+.add-note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.note-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.note-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.add-note-button {
+  align-self: flex-end;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background-color: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-note-button:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.add-note-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.no-notes {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.note-item {
+  padding: 12px;
+  background-color: var(--color-background-alt);
+  border-radius: 6px;
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.note-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.note-date {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.note-text {
+  font-size: 14px;
+  color: var(--color-text);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Edit Volunteer Actions */
+.edit-volunteer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-spacer {
+  flex: 1;
+}
+
+.delete-button {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-error);
+  background-color: transparent;
+  border: 1px solid var(--color-error-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background-color: var(--color-error-light);
+}
+
+.delete-confirm-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-error);
+  flex: 1;
+}
+
+.confirm-delete-button {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background-color: var(--color-error);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.confirm-delete-button:hover {
+  background-color: #b91c1c;
+}
+
+.confirm-delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (min-width: 480px) {
+  .edit-volunteer-modal {
+    max-width: 540px;
+  }
+}
