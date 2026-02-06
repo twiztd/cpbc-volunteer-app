@@ -138,51 +138,59 @@ async def list_volunteers(
 @router.get(
     "/reports/export",
     summary="Export volunteer data as CSV",
-    description="Export all volunteer data to a CSV file"
+    description="Export volunteer data to a CSV file. Supports filtering by ministry area. Ministry areas appear as columns."
 )
 async def export_volunteers_csv(
+    ministry_area: Optional[str] = Query(None, description="Filter by ministry area"),
     db: Session = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user)
 ):
     """
-    Export all volunteer data as a CSV file.
+    Export volunteer data as a CSV file.
 
-    CSV columns:
-    - ID, Name, Phone, Email, Signup Date, Ministry Areas, Categories
+    Ministry areas appear as individual columns with 'X' marks.
+    Only ministry columns where at least one volunteer signed up are included.
+    Supports filtering by ministry area to export only matching volunteers.
     """
-    logger.info(f"Admin {current_admin.email} exporting volunteer data")
+    logger.info(f"Admin {current_admin.email} exporting volunteer data (filter: {ministry_area})")
 
-    volunteers = db.query(Volunteer).order_by(Volunteer.signup_date.desc()).all()
+    query = db.query(Volunteer)
+
+    if ministry_area:
+        query = query.join(VolunteerMinistry).filter(
+            VolunteerMinistry.ministry_area == ministry_area
+        )
+
+    volunteers = query.order_by(Volunteer.signup_date.desc()).all()
+
+    # Collect all ministry areas that have at least one signup among these volunteers
+    ministry_columns = set()
+    for volunteer in volunteers:
+        for m in volunteer.ministries:
+            ministry_columns.add(m.ministry_area)
+
+    ministry_columns = sorted(ministry_columns)
 
     # Create CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
 
-    # Write header
-    writer.writerow([
-        "ID",
-        "Name",
-        "Phone",
-        "Email",
-        "Signup Date",
-        "Ministry Areas",
-        "Categories"
-    ])
+    # Write header with dynamic ministry columns
+    header = ["Name", "Email", "Phone", "Signup Date"] + ministry_columns
+    writer.writerow(header)
 
     # Write data rows
     for volunteer in volunteers:
-        ministry_areas = ", ".join([m.ministry_area for m in volunteer.ministries])
-        categories = ", ".join(set([m.category for m in volunteer.ministries]))
-
-        writer.writerow([
-            volunteer.id,
+        volunteer_ministries = {m.ministry_area for m in volunteer.ministries}
+        row = [
             volunteer.name,
-            volunteer.phone,
             volunteer.email,
-            volunteer.signup_date.strftime("%Y-%m-%d %H:%M:%S"),
-            ministry_areas,
-            categories
-        ])
+            volunteer.phone,
+            volunteer.signup_date.strftime("%Y-%m-%d"),
+        ]
+        for ministry in ministry_columns:
+            row.append("X" if ministry in volunteer_ministries else "")
+        writer.writerow(row)
 
     output.seek(0)
 

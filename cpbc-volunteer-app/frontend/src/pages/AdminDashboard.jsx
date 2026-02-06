@@ -146,7 +146,7 @@ function AdminDashboard() {
 
   const handleExport = async () => {
     try {
-      await exportVolunteers(token)
+      await exportVolunteers(token, filters)
     } catch (err) {
       setError('Failed to export data')
     }
@@ -1038,7 +1038,7 @@ function AdminDashboard() {
                 </svg>
                 <p>Transfer super admin role to <strong>{showTransferConfirm.name || showTransferConfirm.email}</strong>?</p>
               </div>
-              <p className="transfer-note">You will become a regular admin and lose the ability to manage other admins.</p>
+              <p className="transfer-note">You will become a regular admin.</p>
             </div>
             <div className="modal-actions">
               <button

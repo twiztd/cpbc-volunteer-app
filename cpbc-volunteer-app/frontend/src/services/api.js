@@ -39,8 +39,11 @@ export const getVolunteers = async (token, filters = {}) => {
   return response.data
 }
 
-export const exportVolunteers = async (token) => {
-  const response = await api.get('/admin/reports/export', {
+export const exportVolunteers = async (token, filters = {}) => {
+  const params = new URLSearchParams()
+  if (filters.ministry_area) params.append('ministry_area', filters.ministry_area)
+
+  const response = await api.get(`/admin/reports/export?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
     responseType: 'blob'
   })
