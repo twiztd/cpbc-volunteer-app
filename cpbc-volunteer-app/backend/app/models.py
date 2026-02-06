@@ -43,6 +43,8 @@ class AdminUser(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_super_admin = Column(Boolean, default=False, nullable=False)
+    password_reset_token = Column(String(64), nullable=True, index=True)
+    password_reset_expires = Column(DateTime, nullable=True)
 
     notes = relationship("VolunteerNote", back_populates="admin")
 

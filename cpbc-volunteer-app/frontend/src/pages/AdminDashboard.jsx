@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { adminLogin, forgotPassword, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry } from '../services/api'
+import { useSearchParams } from 'react-router-dom'
+import { adminLogin, forgotPassword, resetPassword, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
@@ -13,11 +14,20 @@ function AdminDashboard() {
   const [error, setError] = useState(null)
   const [loginError, setLoginError] = useState(null)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotData, setForgotData] = useState({ email: '', password: '', confirmPassword: '' })
+  const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotSuccess, setForgotSuccess] = useState(null)
   const [forgotError, setForgotError] = useState(null)
   const [filters, setFilters] = useState({ ministry_area: '', sort_by: 'date' })
+
+  // Reset password token state (from email link)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [resetToken, setResetToken] = useState(null)
+  const [resetData, setResetData] = useState({ password: '', confirmPassword: '' })
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetSuccess, setResetSuccess] = useState(null)
+  const [resetError, setResetError] = useState(null)
 
   // Admin management state
   const [activeTab, setActiveTab] = useState('volunteers')
@@ -45,6 +55,17 @@ function AdminDashboard() {
   const [editVolunteerLoading, setEditVolunteerLoading] = useState(false)
   const [editVolunteerError, setEditVolunteerError] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // Detect ?reset_token=XXX from URL (email reset link)
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('reset_token')
+    if (tokenFromUrl) {
+      setResetToken(tokenFromUrl)
+      setShowResetPassword(true)
+      searchParams.delete('reset_token')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [])
 
   useEffect(() => {
     if (token) {
@@ -136,21 +157,10 @@ function AdminDashboard() {
     e.preventDefault()
     setForgotError(null)
     setForgotSuccess(null)
-
-    if (forgotData.password !== forgotData.confirmPassword) {
-      setForgotError('Passwords do not match')
-      return
-    }
-
-    if (forgotData.password.length < 6) {
-      setForgotError('Password must be at least 6 characters')
-      return
-    }
-
     setForgotLoading(true)
 
     try {
-      const data = await forgotPassword(forgotData.email, forgotData.password, forgotData.confirmPassword)
+      const data = await forgotPassword(forgotEmail)
       setForgotSuccess(data.message)
     } catch (err) {
       setForgotError(err.response?.data?.detail || 'Something went wrong. Please try again.')
@@ -161,9 +171,44 @@ function AdminDashboard() {
 
   const handleCloseForgotPassword = () => {
     setShowForgotPassword(false)
-    setForgotData({ email: '', password: '', confirmPassword: '' })
+    setForgotEmail('')
     setForgotSuccess(null)
     setForgotError(null)
+  }
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault()
+    setResetError(null)
+    setResetSuccess(null)
+
+    if (resetData.password !== resetData.confirmPassword) {
+      setResetError('Passwords do not match')
+      return
+    }
+
+    if (resetData.password.length < 6) {
+      setResetError('Password must be at least 6 characters')
+      return
+    }
+
+    setResetLoading(true)
+
+    try {
+      const data = await resetPassword(resetToken, resetData.password, resetData.confirmPassword)
+      setResetSuccess(data.message)
+    } catch (err) {
+      setResetError(err.response?.data?.detail || 'Something went wrong. Please try again.')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  const handleCloseResetPassword = () => {
+    setShowResetPassword(false)
+    setResetToken(null)
+    setResetData({ password: '', confirmPassword: '' })
+    setResetSuccess(null)
+    setResetError(null)
   }
 
   const loadVolunteers = async () => {
@@ -513,7 +558,7 @@ function AdminDashboard() {
           <div className="modal-overlay" onClick={handleCloseForgotPassword}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Reset Password</h2>
+                <h2>Forgot Password</h2>
                 <button className="modal-close" onClick={handleCloseForgotPassword}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
@@ -546,7 +591,7 @@ function AdminDashboard() {
                     </div>
                   )}
 
-                  <p className="forgot-description">Enter your email and choose a new password.</p>
+                  <p className="forgot-description">Enter your email address and we'll send you a link to reset your password.</p>
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="forgot-email">
@@ -557,39 +602,8 @@ function AdminDashboard() {
                       id="forgot-email"
                       className="form-input"
                       placeholder="admin@crosspoint.org"
-                      value={forgotData.email}
-                      onChange={(e) => setForgotData(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="forgot-password">
-                      New Password <span className="required">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      id="forgot-password"
-                      className="form-input"
-                      placeholder="Min 6 characters"
-                      value={forgotData.password}
-                      onChange={(e) => setForgotData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                      minLength={6}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="forgot-confirm">
-                      Confirm Password <span className="required">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      id="forgot-confirm"
-                      className="form-input"
-                      placeholder="Re-enter password"
-                      value={forgotData.confirmPassword}
-                      onChange={(e) => setForgotData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -610,10 +624,110 @@ function AdminDashboard() {
                       {forgotLoading ? (
                         <>
                           <span className="button-spinner"></span>
+                          Sending...
+                        </>
+                      ) : (
+                        'Send Reset Link'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Reset Password Modal (from email link) */}
+        {showResetPassword && (
+          <div className="modal-overlay" onClick={handleCloseResetPassword}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Set New Password</h2>
+                <button className="modal-close" onClick={handleCloseResetPassword}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </div>
+
+              {resetSuccess ? (
+                <div className="forgot-success">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>{resetSuccess}</p>
+                  <button
+                    type="button"
+                    className="submit-button"
+                    onClick={handleCloseResetPassword}
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              ) : (
+                <form className="modal-form" onSubmit={handleResetPassword}>
+                  {resetError && (
+                    <div className="login-error">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                      </svg>
+                      <span>{resetError}</span>
+                    </div>
+                  )}
+
+                  <p className="forgot-description">Choose a new password for your account.</p>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="reset-password">
+                      New Password <span className="required">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      id="reset-password"
+                      className="form-input"
+                      placeholder="Min 6 characters"
+                      value={resetData.password}
+                      onChange={(e) => setResetData(prev => ({ ...prev, password: e.target.value }))}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="reset-confirm">
+                      Confirm Password <span className="required">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      id="reset-confirm"
+                      className="form-input"
+                      placeholder="Re-enter password"
+                      value={resetData.confirmPassword}
+                      onChange={(e) => setResetData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="cancel-button"
+                      onClick={handleCloseResetPassword}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="submit-button"
+                      disabled={resetLoading}
+                    >
+                      {resetLoading ? (
+                        <>
+                          <span className="button-spinner"></span>
                           Resetting...
                         </>
                       ) : (
-                        'Reset Password'
+                        'Set New Password'
                       )}
                     </button>
                   </div>

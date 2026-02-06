@@ -194,9 +194,14 @@ class TransferSuperAdminRequest(BaseModel):
     target_admin_id: int
 
 
-class ResetPasswordRequest(BaseModel):
-    """Request schema for resetting password."""
+class ForgotPasswordRequest(BaseModel):
+    """Request schema for initiating password reset (email only)."""
     email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request schema for completing password reset with token."""
+    token: str
     password: str
     confirm_password: str
 

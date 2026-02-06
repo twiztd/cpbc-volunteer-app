@@ -1,6 +1,8 @@
 import csv
 import io
 import logging
+import secrets
+from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -17,6 +19,7 @@ from ..schemas import (
     AdminUserListResponse,
     AdminUserUpdate,
     TransferSuperAdminRequest,
+    ForgotPasswordRequest,
     ResetPasswordRequest,
     VolunteerResponse,
     VolunteerListResponse,
@@ -38,6 +41,7 @@ from ..auth.auth import (
     get_current_admin_user,
     get_password_hash
 )
+from ..email import send_password_reset_email
 
 logger = logging.getLogger(__name__)
 
@@ -81,18 +85,53 @@ async def admin_login(login_data: AdminLogin, db: Session = Depends(get_db)):
 @router.post(
     "/forgot-password",
     response_model=MessageResponse,
-    summary="Reset password",
-    description="Reset an admin's password by providing email and new password.",
-    responses={400: {"model": ErrorResponse}}
+    summary="Request password reset",
+    description="Send a password reset email to the provided admin email address."
 )
 async def forgot_password(
+    request_data: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Initiate password reset. Generates a token, stores it with 1hr expiry,
+    and sends a reset link via email.
+    Always returns success to prevent email enumeration.
+    """
+    email_lower = request_data.email.lower()
+    logger.info(f"Password reset requested for: {email_lower}")
+
+    admin_user = db.query(AdminUser).filter(
+        func.lower(AdminUser.email) == email_lower,
+        AdminUser.is_active == True
+    ).first()
+
+    if admin_user:
+        token = secrets.token_hex(16)
+        admin_user.password_reset_token = token
+        admin_user.password_reset_expires = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+
+        send_password_reset_email(admin_user.email, token)
+
+    return MessageResponse(
+        message="If an account exists with that email, a password reset link has been sent."
+    )
+
+
+@router.post(
+    "/reset-password",
+    response_model=MessageResponse,
+    summary="Reset password with token",
+    description="Complete password reset using the token from the reset email.",
+    responses={400: {"model": ErrorResponse}}
+)
+async def reset_password(
     request_data: ResetPasswordRequest,
     db: Session = Depends(get_db)
 ):
     """
-    Reset an admin's password.
-    Validates passwords match and are at least 6 characters.
-    Only updates the single admin matching the provided email.
+    Complete password reset. Validates token and expiry,
+    updates password, and clears the token.
     """
     if request_data.password != request_data.confirm_password:
         raise HTTPException(
@@ -106,22 +145,34 @@ async def forgot_password(
             detail="Password must be at least 6 characters"
         )
 
-    email_lower = request_data.email.lower()
-    logger.info(f"Password reset requested for: {email_lower}")
-
     admin_user = db.query(AdminUser).filter(
-        func.lower(AdminUser.email) == email_lower,
+        AdminUser.password_reset_token == request_data.token,
         AdminUser.is_active == True
     ).first()
 
-    if admin_user:
-        admin_user.hashed_password = get_password_hash(request_data.password)
-        db.commit()
-        logger.info(f"Password reset completed for {email_lower}")
+    if not admin_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset link"
+        )
 
-    return MessageResponse(
-        message="If an account exists with that email, your password has been updated."
-    )
+    if not admin_user.password_reset_expires or admin_user.password_reset_expires < datetime.utcnow():
+        admin_user.password_reset_token = None
+        admin_user.password_reset_expires = None
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset link has expired. Please request a new one."
+        )
+
+    admin_user.hashed_password = get_password_hash(request_data.password)
+    admin_user.password_reset_token = None
+    admin_user.password_reset_expires = None
+    db.commit()
+
+    logger.info(f"Password reset completed for {admin_user.email}")
+
+    return MessageResponse(message="Your password has been reset successfully. You can now log in.")
 
 
 @router.get(
