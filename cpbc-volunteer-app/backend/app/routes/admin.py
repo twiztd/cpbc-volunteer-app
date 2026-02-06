@@ -1,6 +1,8 @@
 import csv
 import io
 import logging
+import secrets
+import string
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -17,6 +19,7 @@ from ..schemas import (
     AdminUserListResponse,
     AdminUserUpdate,
     TransferSuperAdminRequest,
+    ForgotPasswordRequest,
     VolunteerResponse,
     VolunteerListResponse,
     VolunteerUpdate,
@@ -75,6 +78,41 @@ async def admin_login(login_data: AdminLogin, db: Session = Depends(get_db)):
     logger.info(f"Admin logged in successfully: {login_data.email}")
 
     return AdminTokenResponse(access_token=access_token)
+
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageResponse,
+    summary="Forgot password",
+    description="Request a password reset. If the email exists, generates a new random password."
+)
+async def forgot_password(
+    request_data: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset an admin's password.
+    Generates a random 12-character password and logs it to console.
+    Always returns success to prevent email enumeration.
+    """
+    email_lower = request_data.email.lower()
+    logger.info(f"Password reset requested for: {email_lower}")
+
+    admin_user = db.query(AdminUser).filter(
+        func.lower(AdminUser.email) == email_lower,
+        AdminUser.is_active == True
+    ).first()
+
+    if admin_user:
+        alphabet = string.ascii_letters + string.digits
+        new_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+        admin_user.hashed_password = get_password_hash(new_password)
+        db.commit()
+        logger.info(f"Password reset for {email_lower}. New password: {new_password}")
+
+    return MessageResponse(
+        message="If an account exists with that email, a password reset has been sent."
+    )
 
 
 @router.get(

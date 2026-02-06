@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { adminLogin, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry } from '../services/api'
+import { adminLogin, forgotPassword, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
@@ -12,6 +12,11 @@ function AdminDashboard() {
   const [loginLoading, setLoginLoading] = useState(false)
   const [error, setError] = useState(null)
   const [loginError, setLoginError] = useState(null)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
+  const [forgotSuccess, setForgotSuccess] = useState(null)
+  const [forgotError, setForgotError] = useState(null)
   const [filters, setFilters] = useState({ ministry_area: '', sort_by: 'date' })
 
   // Admin management state
@@ -125,6 +130,29 @@ function AdminDashboard() {
     setAdminUsers([])
     setLoginData({ email: '', password: '' })
     setActiveTab('volunteers')
+  }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    setForgotLoading(true)
+    setForgotError(null)
+    setForgotSuccess(null)
+
+    try {
+      const data = await forgotPassword(forgotEmail)
+      setForgotSuccess(data.message)
+    } catch (err) {
+      setForgotError(err.response?.data?.detail || 'Something went wrong. Please try again.')
+    } finally {
+      setForgotLoading(false)
+    }
+  }
+
+  const handleCloseForgotPassword = () => {
+    setShowForgotPassword(false)
+    setForgotEmail('')
+    setForgotSuccess(null)
+    setForgotError(null)
   }
 
   const loadVolunteers = async () => {
@@ -459,8 +487,99 @@ function AdminDashboard() {
                 'Login'
               )}
             </button>
+            <button
+              type="button"
+              className="forgot-password-link"
+              onClick={() => setShowForgotPassword(true)}
+            >
+              Forgot Password?
+            </button>
           </div>
         </div>
+
+        {/* Forgot Password Modal */}
+        {showForgotPassword && (
+          <div className="modal-overlay" onClick={handleCloseForgotPassword}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Reset Password</h2>
+                <button className="modal-close" onClick={handleCloseForgotPassword}>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </div>
+
+              {forgotSuccess ? (
+                <div className="forgot-success">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>{forgotSuccess}</p>
+                  <button
+                    type="button"
+                    className="submit-button"
+                    onClick={handleCloseForgotPassword}
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              ) : (
+                <form className="modal-form" onSubmit={handleForgotPassword}>
+                  {forgotError && (
+                    <div className="login-error">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                      </svg>
+                      <span>{forgotError}</span>
+                    </div>
+                  )}
+
+                  <p className="forgot-description">Enter your email address and we'll send you a password reset.</p>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="forgot-email">
+                      Email <span className="required">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="forgot-email"
+                      className="form-input"
+                      placeholder="admin@crosspoint.org"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="cancel-button"
+                      onClick={handleCloseForgotPassword}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="submit-button"
+                      disabled={forgotLoading}
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <span className="button-spinner"></span>
+                          Sending...
+                        </>
+                      ) : (
+                        'Send Reset Link'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     )
   }

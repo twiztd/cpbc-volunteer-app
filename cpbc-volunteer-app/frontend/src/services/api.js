@@ -28,6 +28,11 @@ export const adminLogin = async (email, password) => {
   return response.data
 }
 
+export const forgotPassword = async (email) => {
+  const response = await api.post('/admin/forgot-password', { email })
+  return response.data
+}
+
 export const getVolunteers = async (token, filters = {}) => {
   const params = new URLSearchParams()
   if (filters.ministry_area) params.append('ministry_area', filters.ministry_area)

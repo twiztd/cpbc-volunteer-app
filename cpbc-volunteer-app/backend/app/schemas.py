@@ -194,6 +194,11 @@ class TransferSuperAdminRequest(BaseModel):
     target_admin_id: int
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Request schema for forgot password."""
+    email: EmailStr
+
+
 # Ministry Report Schemas
 class VolunteerBasicInfo(BaseModel):
     """Basic volunteer info for reports."""
