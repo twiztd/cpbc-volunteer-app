@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Volunteer, VolunteerMinistry
+from ..models import Volunteer, VolunteerMinistry, AdminUser
 from ..schemas import (
     VolunteerCreate,
     VolunteerResponse,
@@ -11,7 +11,7 @@ from ..schemas import (
     MessageResponse,
     MINISTRY_CATEGORIES
 )
-from ..services.email_service import send_volunteer_notification
+from ..email import send_volunteer_notification_email, ADMIN_NOTIFICATION_EMAIL
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,30 @@ async def create_volunteer(volunteer_data: VolunteerCreate, db: Session = Depend
         logger.info(f"Volunteer created successfully: ID {db_volunteer.id}")
 
         # Send email notification (fails gracefully)
-        send_volunteer_notification(db_volunteer)
+        try:
+            # Determine notification recipients
+            if ADMIN_NOTIFICATION_EMAIL:
+                to_emails = [ADMIN_NOTIFICATION_EMAIL]
+            else:
+                super_admin = db.query(AdminUser).filter(
+                    AdminUser.is_super_admin == True,
+                    AdminUser.is_active == True
+                ).first()
+                to_emails = [super_admin.email] if super_admin else []
+
+            ministries = [
+                {"ministry_area": m.ministry_area, "category": m.category}
+                for m in db_volunteer.ministries
+            ]
+            send_volunteer_notification_email(
+                to_emails=to_emails,
+                volunteer_name=db_volunteer.name,
+                volunteer_email=db_volunteer.email,
+                volunteer_phone=db_volunteer.phone,
+                ministries=ministries,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send volunteer notification: {str(e)}")
 
         return db_volunteer
 
