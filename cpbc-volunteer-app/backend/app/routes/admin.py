@@ -1,8 +1,6 @@
 import csv
 import io
 import logging
-import secrets
-import string
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -19,7 +17,7 @@ from ..schemas import (
     AdminUserListResponse,
     AdminUserUpdate,
     TransferSuperAdminRequest,
-    ForgotPasswordRequest,
+    ResetPasswordRequest,
     VolunteerResponse,
     VolunteerListResponse,
     VolunteerUpdate,
@@ -83,18 +81,31 @@ async def admin_login(login_data: AdminLogin, db: Session = Depends(get_db)):
 @router.post(
     "/forgot-password",
     response_model=MessageResponse,
-    summary="Forgot password",
-    description="Request a password reset. If the email exists, generates a new random password."
+    summary="Reset password",
+    description="Reset an admin's password by providing email and new password.",
+    responses={400: {"model": ErrorResponse}}
 )
 async def forgot_password(
-    request_data: ForgotPasswordRequest,
+    request_data: ResetPasswordRequest,
     db: Session = Depends(get_db)
 ):
     """
     Reset an admin's password.
-    Generates a random 12-character password and logs it to console.
-    Always returns success to prevent email enumeration.
+    Validates passwords match and are at least 6 characters.
+    Only updates the single admin matching the provided email.
     """
+    if request_data.password != request_data.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match"
+        )
+
+    if len(request_data.password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters"
+        )
+
     email_lower = request_data.email.lower()
     logger.info(f"Password reset requested for: {email_lower}")
 
@@ -104,14 +115,12 @@ async def forgot_password(
     ).first()
 
     if admin_user:
-        alphabet = string.ascii_letters + string.digits
-        new_password = ''.join(secrets.choice(alphabet) for _ in range(12))
-        admin_user.hashed_password = get_password_hash(new_password)
+        admin_user.hashed_password = get_password_hash(request_data.password)
         db.commit()
-        logger.info(f"Password reset for {email_lower}. New password: {new_password}")
+        logger.info(f"Password reset completed for {email_lower}")
 
     return MessageResponse(
-        message="If an account exists with that email, a password reset has been sent."
+        message="If an account exists with that email, your password has been updated."
     )
 
 

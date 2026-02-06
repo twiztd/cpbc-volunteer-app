@@ -13,7 +13,7 @@ function AdminDashboard() {
   const [error, setError] = useState(null)
   const [loginError, setLoginError] = useState(null)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotData, setForgotData] = useState({ email: '', password: '', confirmPassword: '' })
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotSuccess, setForgotSuccess] = useState(null)
   const [forgotError, setForgotError] = useState(null)
@@ -134,12 +134,23 @@ function AdminDashboard() {
 
   const handleForgotPassword = async (e) => {
     e.preventDefault()
-    setForgotLoading(true)
     setForgotError(null)
     setForgotSuccess(null)
 
+    if (forgotData.password !== forgotData.confirmPassword) {
+      setForgotError('Passwords do not match')
+      return
+    }
+
+    if (forgotData.password.length < 6) {
+      setForgotError('Password must be at least 6 characters')
+      return
+    }
+
+    setForgotLoading(true)
+
     try {
-      const data = await forgotPassword(forgotEmail)
+      const data = await forgotPassword(forgotData.email, forgotData.password, forgotData.confirmPassword)
       setForgotSuccess(data.message)
     } catch (err) {
       setForgotError(err.response?.data?.detail || 'Something went wrong. Please try again.')
@@ -150,7 +161,7 @@ function AdminDashboard() {
 
   const handleCloseForgotPassword = () => {
     setShowForgotPassword(false)
-    setForgotEmail('')
+    setForgotData({ email: '', password: '', confirmPassword: '' })
     setForgotSuccess(null)
     setForgotError(null)
   }
@@ -535,7 +546,7 @@ function AdminDashboard() {
                     </div>
                   )}
 
-                  <p className="forgot-description">Enter your email address and we'll send you a password reset.</p>
+                  <p className="forgot-description">Enter your email and choose a new password.</p>
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="forgot-email">
@@ -546,8 +557,39 @@ function AdminDashboard() {
                       id="forgot-email"
                       className="form-input"
                       placeholder="admin@crosspoint.org"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
+                      value={forgotData.email}
+                      onChange={(e) => setForgotData(prev => ({ ...prev, email: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="forgot-password">
+                      New Password <span className="required">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      id="forgot-password"
+                      className="form-input"
+                      placeholder="Min 6 characters"
+                      value={forgotData.password}
+                      onChange={(e) => setForgotData(prev => ({ ...prev, password: e.target.value }))}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="forgot-confirm">
+                      Confirm Password <span className="required">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      id="forgot-confirm"
+                      className="form-input"
+                      placeholder="Re-enter password"
+                      value={forgotData.confirmPassword}
+                      onChange={(e) => setForgotData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       required
                     />
                   </div>
@@ -568,10 +610,10 @@ function AdminDashboard() {
                       {forgotLoading ? (
                         <>
                           <span className="button-spinner"></span>
-                          Sending...
+                          Resetting...
                         </>
                       ) : (
-                        'Send Reset Link'
+                        'Reset Password'
                       )}
                     </button>
                   </div>

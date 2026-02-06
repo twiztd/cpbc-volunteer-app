@@ -28,8 +28,12 @@ export const adminLogin = async (email, password) => {
   return response.data
 }
 
-export const forgotPassword = async (email) => {
-  const response = await api.post('/admin/forgot-password', { email })
+export const forgotPassword = async (email, password, confirmPassword) => {
+  const response = await api.post('/admin/forgot-password', {
+    email,
+    password,
+    confirm_password: confirmPassword
+  })
   return response.data
 }
 

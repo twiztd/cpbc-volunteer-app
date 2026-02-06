@@ -194,9 +194,11 @@ class TransferSuperAdminRequest(BaseModel):
     target_admin_id: int
 
 
-class ForgotPasswordRequest(BaseModel):
-    """Request schema for forgot password."""
+class ResetPasswordRequest(BaseModel):
+    """Request schema for resetting password."""
     email: EmailStr
+    password: str
+    confirm_password: str
 
 
 # Ministry Report Schemas
