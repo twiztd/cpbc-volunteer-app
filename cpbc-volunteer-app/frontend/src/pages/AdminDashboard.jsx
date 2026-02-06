@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { adminLogin, forgotPassword, resetPassword, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry } from '../services/api'
+import { adminLogin, forgotPassword, resetPassword, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry, downloadQRCode } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
@@ -151,6 +151,14 @@ function AdminDashboard() {
     setAdminUsers([])
     setLoginData({ email: '', password: '' })
     setActiveTab('volunteers')
+  }
+
+  const handleDownloadQR = async () => {
+    try {
+      await downloadQRCode(token)
+    } catch (err) {
+      setError('Failed to download QR code')
+    }
   }
 
   const handleForgotPassword = async (e) => {
@@ -749,13 +757,21 @@ function AdminDashboard() {
             <p className="church-name">Cross Point Baptist Church</p>
             <h1 className="main-heading">Admin Dashboard</h1>
           </div>
-          <button className="logout-button" onClick={handleLogout}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd" />
-              <path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clipRule="evenodd" />
-            </svg>
-            Logout
-          </button>
+          <div className="header-actions">
+            <button className="qr-button" onClick={handleDownloadQR}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3.75 2A1.75 1.75 0 002 3.75v3.5C2 8.216 2.784 9 3.75 9h3.5A1.75 1.75 0 009 7.25v-3.5A1.75 1.75 0 007.25 2h-3.5zM3.5 3.75a.25.25 0 01.25-.25h3.5a.25.25 0 01.25.25v3.5a.25.25 0 01-.25.25h-3.5a.25.25 0 01-.25-.25v-3.5zM3.75 11A1.75 1.75 0 002 12.75v3.5c0 .966.784 1.75 1.75 1.75h3.5A1.75 1.75 0 009 16.25v-3.5A1.75 1.75 0 007.25 11h-3.5zm-.25 1.75a.25.25 0 01.25-.25h3.5a.25.25 0 01.25.25v3.5a.25.25 0 01-.25.25h-3.5a.25.25 0 01-.25-.25v-3.5zM12.75 2A1.75 1.75 0 0011 3.75v3.5c0 .966.784 1.75 1.75 1.75h3.5A1.75 1.75 0 0018 7.25v-3.5A1.75 1.75 0 0016.25 2h-3.5zm-.25 1.75a.25.25 0 01.25-.25h3.5a.25.25 0 01.25.25v3.5a.25.25 0 01-.25.25h-3.5a.25.25 0 01-.25-.25v-3.5zM11 12.75a.75.75 0 011.5 0v1.5h1.5a.75.75 0 010 1.5H13v3.5a.75.75 0 01-1.5 0v-3.5h-1a.75.75 0 010-1.5h1v-1.5zm3.5 4.5a.75.75 0 01.75-.75h2a.75.75 0 010 1.5h-2a.75.75 0 01-.75-.75z" clipRule="evenodd" />
+              </svg>
+              QR Code
+            </button>
+            <button className="logout-button" onClick={handleLogout}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clipRule="evenodd" />
+              </svg>
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 

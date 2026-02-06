@@ -1,6 +1,7 @@
 import csv
 import io
 import logging
+import qrcode
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
@@ -998,4 +999,36 @@ async def export_ministry_csv(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={safe_name}_volunteers.csv"}
+    )
+
+
+@router.get("/qr-code")
+async def download_qr_code(
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Generate and download a QR code PNG that links to the volunteer signup page.
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data("http://18.221.185.76")
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # Resize to 300x300
+    img = img.resize((300, 300))
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="image/png",
+        headers={"Content-Disposition": "attachment; filename=cpbc_volunteer_signup_qr.png"}
     )

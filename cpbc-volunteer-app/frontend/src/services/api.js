@@ -182,4 +182,22 @@ export const exportMinistry = async (token, ministryName) => {
   window.URL.revokeObjectURL(url)
 }
 
+// QR Code endpoint
+
+export const downloadQRCode = async (token) => {
+  const response = await api.get('/admin/qr-code', {
+    headers: { Authorization: `Bearer ${token}` },
+    responseType: 'blob'
+  })
+
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', 'cpbc_volunteer_signup_qr.png')
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
+
 export default api
