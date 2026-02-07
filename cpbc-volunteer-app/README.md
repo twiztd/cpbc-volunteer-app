@@ -163,11 +163,10 @@ The following ministry areas are available for volunteer signup:
 - **Children's Ministry**: Childcare and/or Teaching, VBS
 - **Hospitality**: Greeters, Make Contact with Visitors, Kitchen Cleanup
 - **Media**: Sound, etc., Social Media
-- **Mission Trips**: BBQ Fundraisers
+- **Missions**: Guatemala Mission Trip, El Salvador Mission Trip, 3:18 Church (Third Saturday), 5 Loaves 2 Fish (Thursday before 1st Saturday)
 - **Member Care**: Meal Trains for members in need, Help for Elderly/Widows
 - **Community Outreach**: Trunk or Treat, Easter Event, New Outreach Programs
 - **Building/Grounds**: Maintenance, Security
-- **Recurring Service Events**: 318 Church (Third Saturday), 5 Loaves 2 Fish (Thursday before 1st Saturday)
 
 ## Development Notes
 

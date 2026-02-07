@@ -7,11 +7,10 @@ const CATEGORY_ORDER = [
   "Children's Ministry",
   "Hospitality",
   "Media",
-  "Mission Trips",
+  "Missions",
   "Member Care",
   "Community Outreach",
-  "Building/Grounds",
-  "Recurring Service Events"
+  "Building/Grounds"
 ]
 
 function ThankYou() {

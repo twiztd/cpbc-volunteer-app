@@ -18,8 +18,11 @@ const FALLBACK_CATEGORIES = {
     "Sound, etc.",
     "Social Media"
   ],
-  "Mission Trips": [
-    "BBQ Fundraisers"
+  "Missions": [
+    "Guatemala Mission Trip",
+    "El Salvador Mission Trip",
+    "3:18 Church (Third Saturday)",
+    "5 Loaves 2 Fish (Thursday before 1st Saturday)"
   ],
   "Member Care": [
     "Meal Trains for members in need",
@@ -33,10 +36,6 @@ const FALLBACK_CATEGORIES = {
   "Building/Grounds": [
     "Maintenance",
     "Security"
-  ],
-  "Recurring Service Events": [
-    "318 Church (Third Saturday)",
-    "5 Loaves 2 Fish (Thursday before 1st Saturday)"
   ]
 }
 
@@ -45,11 +44,10 @@ const CATEGORY_ORDER = [
   "Children's Ministry",
   "Hospitality",
   "Media",
-  "Mission Trips",
+  "Missions",
   "Member Care",
   "Community Outreach",
-  "Building/Grounds",
-  "Recurring Service Events"
+  "Building/Grounds"
 ]
 
 function VolunteerForm() {
