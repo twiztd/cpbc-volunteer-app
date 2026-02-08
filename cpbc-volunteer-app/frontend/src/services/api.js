@@ -56,6 +56,7 @@ export const getVolunteers = async (token, filters = {}) => {
 export const exportVolunteers = async (token, filters = {}) => {
   const params = new URLSearchParams()
   if (filters.ministry_area) params.append('ministry_area', filters.ministry_area)
+  if (filters.sort_by) params.append('sort_by', filters.sort_by)
 
   const response = await api.get(`/admin/reports/export?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },

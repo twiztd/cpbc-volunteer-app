@@ -1703,3 +1703,14 @@
     max-width: 400px;
   }
 }
+
+/* Results Page */
+.results-filter-info {
+  padding: 12px 16px;
+  background-color: var(--color-background);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}

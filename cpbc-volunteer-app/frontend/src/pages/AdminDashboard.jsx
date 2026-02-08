@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { adminLogin, forgotPassword, resetPassword, getVolunteers, exportVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry, downloadQRCode } from '../services/api'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { adminLogin, forgotPassword, resetPassword, getVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry, downloadQRCode } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
+  const navigate = useNavigate()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [token, setToken] = useState(localStorage.getItem('adminToken'))
   const [loginData, setLoginData] = useState({ email: '', password: '' })
@@ -236,12 +237,11 @@ function AdminDashboard() {
     }
   }
 
-  const handleExport = async () => {
-    try {
-      await exportVolunteers(token, filters)
-    } catch (err) {
-      setError('Failed to export data')
-    }
+  const handleViewResults = () => {
+    const params = new URLSearchParams()
+    if (filters.ministry_area) params.append('ministry_area', filters.ministry_area)
+    if (filters.sort_by) params.append('sort_by', filters.sort_by)
+    navigate(`/admin/results?${params.toString()}`)
   }
 
   const handleFilterChange = (e) => {
@@ -874,12 +874,12 @@ function AdminDashboard() {
                 </div>
 
                 <div className="filter-actions">
-                  <button className="export-button" onClick={handleExport}>
+                  <button className="export-button" onClick={handleViewResults}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
-                      <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
+                      <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                      <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                     </svg>
-                    Export CSV
+                    View Results
                   </button>
                 </div>
               </div>

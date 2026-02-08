@@ -237,19 +237,20 @@ async def list_volunteers(
 @router.get(
     "/reports/export",
     summary="Export volunteer data as CSV",
-    description="Export volunteer data to a CSV file. Supports filtering by ministry area. Ministry areas appear as columns."
+    description="Export volunteer data to a CSV file. Supports filtering by ministry area. Ministry areas listed in a single column."
 )
 async def export_volunteers_csv(
     ministry_area: Optional[str] = Query(None, description="Filter by ministry area"),
+    sort_by: Optional[str] = Query("date", description="Sort by: name, date, or ministry"),
     db: Session = Depends(get_db),
     current_admin: AdminUser = Depends(get_current_admin_user)
 ):
     """
     Export volunteer data as a CSV file.
 
-    Ministry areas appear as individual columns with 'X' marks.
-    Only ministry columns where at least one volunteer signed up are included.
-    Supports filtering by ministry area to export only matching volunteers.
+    Ministry areas are listed comma-separated in a single "Ministry Areas" column.
+    When filtered by a specific ministry, only that ministry name appears.
+    When no filter, all volunteer ministries are listed.
     """
     logger.info(f"Admin {current_admin.email} exporting volunteer data (filter: {ministry_area})")
 
@@ -260,35 +261,42 @@ async def export_volunteers_csv(
             VolunteerMinistry.ministry_area == ministry_area
         )
 
-    volunteers = query.order_by(Volunteer.signup_date.desc()).all()
+    # Apply sorting
+    if sort_by == "name":
+        query = query.order_by(Volunteer.name)
+    elif sort_by == "ministry":
+        if not ministry_area:
+            query = query.outerjoin(VolunteerMinistry)
+        query = query.group_by(Volunteer.id).order_by(
+            func.count(VolunteerMinistry.id).desc()
+        )
+    else:
+        query = query.order_by(Volunteer.signup_date.desc())
 
-    # Collect all ministry areas that have at least one signup among these volunteers
-    ministry_columns = set()
-    for volunteer in volunteers:
-        for m in volunteer.ministries:
-            ministry_columns.add(m.ministry_area)
-
-    ministry_columns = sorted(ministry_columns)
+    volunteers = query.all()
 
     # Create CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
 
-    # Write header with dynamic ministry columns
-    header = ["Name", "Email", "Phone", "Signup Date"] + ministry_columns
+    # Write header with single Ministry Areas column
+    header = ["Name", "Email", "Phone", "Signup Date", "Ministry Areas"]
     writer.writerow(header)
 
     # Write data rows
     for volunteer in volunteers:
-        volunteer_ministries = {m.ministry_area for m in volunteer.ministries}
+        if ministry_area:
+            ministry_areas_str = ministry_area
+        else:
+            ministry_areas_str = ", ".join(m.ministry_area for m in volunteer.ministries)
+
         row = [
             volunteer.name,
             volunteer.email,
             volunteer.phone,
-            volunteer.signup_date.strftime("%Y-%m-%d"),
+            f"{volunteer.signup_date.strftime('%b')} {volunteer.signup_date.day} {volunteer.signup_date.year}",
+            ministry_areas_str,
         ]
-        for ministry in ministry_columns:
-            row.append("X" if ministry in volunteer_ministries else "")
         writer.writerow(row)
 
     output.seek(0)
