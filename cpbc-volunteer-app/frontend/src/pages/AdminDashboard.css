@@ -331,6 +331,7 @@
 
 .filter-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -356,6 +357,33 @@
 }
 
 .export-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.add-volunteer-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  background-color: #16a34a;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.add-volunteer-button:hover {
+  background-color: #15803d;
+}
+
+.add-volunteer-button svg {
   width: 18px;
   height: 18px;
 }
@@ -601,6 +629,10 @@
   }
 
   .export-button {
+    flex: 0 0 auto;
+  }
+
+  .add-volunteer-button {
     flex: 0 0 auto;
   }
 }
