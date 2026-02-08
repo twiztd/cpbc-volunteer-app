@@ -1147,7 +1147,7 @@ async def download_qr_code(
         box_size=10,
         border=4,
     )
-    qr.add_data("http://18.221.185.76")
+    qr.add_data("https://volunteer.crosspointbaptistchurchbc.com/")
     qr.make(fit=True)
 
     img = qr.make_image(fill_color="black", back_color="white")

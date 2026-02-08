@@ -24,11 +24,11 @@ def send_password_reset_email(to_email: str, reset_token: str) -> bool:
     """
     if not all([SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, SMTP_FROM_EMAIL]):
         logger.warning("SMTP not configured - logging reset link to console")
-        reset_link = f"http://18.221.185.76/admin?reset_token={reset_token}"
+        reset_link = f"https://volunteer.crosspointbaptistchurchbc.com/admin?reset_token={reset_token}"
         logger.info(f"Password reset link for {to_email}: {reset_link}")
         return False
 
-    reset_link = f"http://18.221.185.76/admin?reset_token={reset_token}"
+    reset_link = f"https://volunteer.crosspointbaptistchurchbc.com/admin?reset_token={reset_token}"
 
     subject = "Password Reset - CPBC Volunteer App"
 
@@ -98,7 +98,7 @@ Cross Point Baptist Church Volunteer App"""
         return True
     except Exception as e:
         logger.error(f"Failed to send password reset email to {to_email}: {str(e)}")
-        reset_link = f"http://18.221.185.76/admin?reset_token={reset_token}"
+        reset_link = f"https://volunteer.crosspointbaptistchurchbc.com/admin?reset_token={reset_token}"
         logger.info(f"Password reset link for {to_email}: {reset_link}")
         return False
 
@@ -155,7 +155,7 @@ Ministry Areas Selected:
 {ministry_text}
 
 View all volunteers in the admin dashboard:
-http://18.221.185.76/admin
+https://volunteer.crosspointbaptistchurchbc.com/admin
 
 ---
 Cross Point Baptist Church Volunteer App"""
@@ -217,7 +217,7 @@ Cross Point Baptist Church Volunteer App"""
             </div>
 
             <p style="text-align: center;">
-                <a href="http://18.221.185.76/admin" class="button"
+                <a href="https://volunteer.crosspointbaptistchurchbc.com/admin" class="button"
                    style="color: white;">View Admin Dashboard</a>
             </p>
         </div>
