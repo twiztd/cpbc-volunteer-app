@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -61,3 +61,15 @@ class VolunteerNote(Base):
 
     volunteer = relationship("Volunteer", back_populates="notes")
     admin = relationship("AdminUser", back_populates="notes")
+
+
+class CustomMinistryTag(Base):
+    """Custom ministry tags added by admins at runtime."""
+    __tablename__ = "custom_ministry_tags"
+    __table_args__ = (
+        UniqueConstraint("ministry_area", "category", name="uq_custom_tag"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    ministry_area = Column(String(255), nullable=False)
+    category = Column(String(255), nullable=False)

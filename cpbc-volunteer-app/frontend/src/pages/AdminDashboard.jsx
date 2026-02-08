@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { adminLogin, forgotPassword, resetPassword, getVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry, downloadQRCode, getMinistryTags, renameMinistryTag, deleteMinistryTag } from '../services/api'
+import { adminLogin, forgotPassword, resetPassword, getVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry, downloadQRCode, getMinistryTags, renameMinistryTag, deleteMinistryTag, createMinistryTag, adminCreateVolunteer } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
@@ -55,6 +55,16 @@ function AdminDashboard() {
   const [renameLoading, setRenameLoading] = useState(false)
   const [showDeleteTagConfirm, setShowDeleteTagConfirm] = useState(null)
   const [deleteTagLoading, setDeleteTagLoading] = useState(false)
+  const [showAddTagModal, setShowAddTagModal] = useState(false)
+  const [newTagData, setNewTagData] = useState({ ministry_area: '', category: '' })
+  const [addTagLoading, setAddTagLoading] = useState(false)
+  const [addTagError, setAddTagError] = useState(null)
+
+  // Add Volunteer modal state
+  const [showAddVolunteerModal, setShowAddVolunteerModal] = useState(false)
+  const [addVolunteerData, setAddVolunteerData] = useState({ name: '', email: '', phone: '', ministries: [] })
+  const [addVolunteerLoading, setAddVolunteerLoading] = useState(false)
+  const [addVolunteerError, setAddVolunteerError] = useState(null)
 
   // Volunteer edit modal state
   const [showEditVolunteerModal, setShowEditVolunteerModal] = useState(false)
@@ -168,6 +178,87 @@ function AdminDashboard() {
     } finally {
       setDeleteTagLoading(false)
     }
+  }
+
+  const handleAddTag = async (e) => {
+    e.preventDefault()
+    setAddTagError(null)
+    if (!newTagData.ministry_area.trim() || !newTagData.category) {
+      setAddTagError('Please fill in all fields')
+      return
+    }
+    setAddTagLoading(true)
+    try {
+      await createMinistryTag(token, newTagData.ministry_area.trim(), newTagData.category)
+      setShowAddTagModal(false)
+      setNewTagData({ ministry_area: '', category: '' })
+      setAddTagError(null)
+      loadMinistryTags()
+      loadMinistryAreas()
+    } catch (err) {
+      setAddTagError(err.response?.data?.detail || 'Failed to create ministry tag')
+    } finally {
+      setAddTagLoading(false)
+    }
+  }
+
+  const handleCloseAddTag = () => {
+    setShowAddTagModal(false)
+    setNewTagData({ ministry_area: '', category: '' })
+    setAddTagError(null)
+  }
+
+  const handleAddVolunteer = async (e) => {
+    e.preventDefault()
+    setAddVolunteerError(null)
+    if (!addVolunteerData.name.trim() || !addVolunteerData.email.trim() || !addVolunteerData.phone.trim()) {
+      setAddVolunteerError('Please fill in all required fields')
+      return
+    }
+    if (addVolunteerData.ministries.length === 0) {
+      setAddVolunteerError('Please select at least one ministry area')
+      return
+    }
+    setAddVolunteerLoading(true)
+    try {
+      await adminCreateVolunteer(token, {
+        name: addVolunteerData.name.trim(),
+        email: addVolunteerData.email.trim(),
+        phone: addVolunteerData.phone.trim(),
+        ministries: addVolunteerData.ministries
+      })
+      setShowAddVolunteerModal(false)
+      setAddVolunteerData({ name: '', email: '', phone: '', ministries: [] })
+      setAddVolunteerError(null)
+      loadVolunteers()
+    } catch (err) {
+      setAddVolunteerError(err.response?.data?.detail || 'Failed to create volunteer')
+    } finally {
+      setAddVolunteerLoading(false)
+    }
+  }
+
+  const handleCloseAddVolunteer = () => {
+    setShowAddVolunteerModal(false)
+    setAddVolunteerData({ name: '', email: '', phone: '', ministries: [] })
+    setAddVolunteerError(null)
+  }
+
+  const handleAddVolunteerMinistryToggle = (ministryArea, category) => {
+    setAddVolunteerData(prev => {
+      const exists = prev.ministries.some(m => m.ministry_area === ministryArea)
+      if (exists) {
+        return {
+          ...prev,
+          ministries: prev.ministries.filter(m => m.ministry_area !== ministryArea)
+        }
+      } else {
+        return {
+          ...prev,
+          ministries: [...prev.ministries, { ministry_area: ministryArea, category }]
+        }
+      }
+    })
   }
 
   const loadMinistryReport = async () => {
@@ -949,6 +1040,12 @@ function AdminDashboard() {
                     </svg>
                     View Results
                   </button>
+                  <button className="add-admin-button" onClick={() => setShowAddVolunteerModal(true)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                    </svg>
+                    Add Volunteer
+                  </button>
                 </div>
               </div>
             </div>
@@ -1048,6 +1145,12 @@ function AdminDashboard() {
           <div className="admin-management">
             <div className="admin-section-header">
               <h2 className="section-title">Ministry Tags</h2>
+              <button className="add-admin-button" onClick={() => setShowAddTagModal(true)}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                Add Ministry Tag
+              </button>
             </div>
             <p className="tags-description">Manage ministry area tags across all volunteers. Renaming a tag updates it for every volunteer who has it.</p>
 
@@ -1790,6 +1893,214 @@ function AdminDashboard() {
               >
                 {deleteTagLoading ? 'Deleting...' : 'Yes, Delete'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Ministry Tag Modal */}
+      {showAddTagModal && (
+        <div className="modal-overlay" onClick={handleCloseAddTag}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add Ministry Tag</h2>
+              <button className="modal-close" onClick={handleCloseAddTag}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            </div>
+
+            <form className="modal-form" onSubmit={handleAddTag}>
+              {addTagError && (
+                <div className="login-error">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                  </svg>
+                  <span>{addTagError}</span>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-tag-category">
+                  Category <span className="required">*</span>
+                </label>
+                <select
+                  id="new-tag-category"
+                  className="form-input"
+                  value={newTagData.category}
+                  onChange={(e) => setNewTagData(prev => ({ ...prev, category: e.target.value }))}
+                  required
+                >
+                  <option value="">Select a category...</option>
+                  {Object.keys(ministryAreas).map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-tag-name">
+                  Ministry Area Name <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="new-tag-name"
+                  className="form-input"
+                  placeholder="e.g., Youth Sunday School"
+                  value={newTagData.ministry_area}
+                  onChange={(e) => setNewTagData(prev => ({ ...prev, ministry_area: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="cancel-button"
+                  onClick={handleCloseAddTag}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="submit-button"
+                  disabled={addTagLoading}
+                >
+                  {addTagLoading ? (
+                    <>
+                      <span className="button-spinner"></span>
+                      Creating...
+                    </>
+                  ) : (
+                    'Add Tag'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Volunteer Modal */}
+      {showAddVolunteerModal && (
+        <div className="modal-overlay" onClick={handleCloseAddVolunteer}>
+          <div className="modal-content edit-volunteer-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add Volunteer</h2>
+              <button className="modal-close" onClick={handleCloseAddVolunteer}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <form className="modal-form" onSubmit={handleAddVolunteer}>
+                {addVolunteerError && (
+                  <div className="login-error" style={{ margin: '0 0 16px 0' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                    </svg>
+                    <span>{addVolunteerError}</span>
+                  </div>
+                )}
+
+                <div className="edit-section">
+                  <h3 className="edit-section-title">Contact Information</h3>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="add-volunteer-name">
+                      Name <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="add-volunteer-name"
+                      className="form-input"
+                      placeholder="John Smith"
+                      value={addVolunteerData.name}
+                      onChange={(e) => setAddVolunteerData(prev => ({ ...prev, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="add-volunteer-email">
+                      Email <span className="required">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="add-volunteer-email"
+                      className="form-input"
+                      placeholder="john@example.com"
+                      value={addVolunteerData.email}
+                      onChange={(e) => setAddVolunteerData(prev => ({ ...prev, email: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="add-volunteer-phone">
+                      Phone <span className="required">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="add-volunteer-phone"
+                      className="form-input"
+                      placeholder="(555) 123-4567"
+                      value={addVolunteerData.phone}
+                      onChange={(e) => setAddVolunteerData(prev => ({ ...prev, phone: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="edit-section">
+                  <h3 className="edit-section-title">Ministry Areas</h3>
+                  <div className="ministry-checkboxes">
+                    {Object.entries(ministryAreas).map(([category, ministries]) => (
+                      <div key={category} className="ministry-category">
+                        <h4 className="category-title">{category}</h4>
+                        <div className="ministry-options">
+                          {ministries.map(ministry => (
+                            <label key={ministry} className="ministry-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={addVolunteerData.ministries.some(m => m.ministry_area === ministry)}
+                                onChange={() => handleAddVolunteerMinistryToggle(ministry, category)}
+                              />
+                              <span className="checkbox-label">{ministry}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={handleCloseAddVolunteer}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="submit-button"
+                    disabled={addVolunteerLoading}
+                  >
+                    {addVolunteerLoading ? (
+                      <>
+                        <span className="button-spinner"></span>
+                        Creating...
+                      </>
+                    ) : (
+                      'Add Volunteer'
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

@@ -253,6 +253,12 @@ class MinistryAreaRename(BaseModel):
     new_name: str
 
 
+class MinistryTagCreate(BaseModel):
+    """Request schema for creating a new ministry area tag."""
+    ministry_area: str
+    category: str
+
+
 # Generic Response Schemas
 class MessageResponse(BaseModel):
     """Generic message response."""

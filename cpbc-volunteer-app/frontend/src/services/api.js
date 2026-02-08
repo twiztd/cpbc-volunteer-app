@@ -164,6 +164,20 @@ export const deleteMinistryTag = async (token, name) => {
   return response.data
 }
 
+export const createMinistryTag = async (token, ministryArea, category) => {
+  const response = await api.post('/admin/ministry-areas/tags', { ministry_area: ministryArea, category }, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const adminCreateVolunteer = async (token, volunteerData) => {
+  const response = await api.post('/admin/volunteers', volunteerData, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
 // Ministry Reports endpoints
 
 export const getMinistryReport = async (token) => {

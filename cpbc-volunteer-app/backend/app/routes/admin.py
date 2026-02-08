@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ..database import get_db
-from ..models import Volunteer, VolunteerMinistry, AdminUser, VolunteerNote
+from ..models import Volunteer, VolunteerMinistry, AdminUser, VolunteerNote, CustomMinistryTag
 from ..schemas import (
     AdminLogin,
     AdminTokenResponse,
@@ -37,6 +37,8 @@ from ..schemas import (
     MinistryTagInfo,
     MinistryTagListResponse,
     MinistryAreaRename,
+    MinistryTagCreate,
+    VolunteerCreate,
     MINISTRY_CATEGORIES
 )
 from ..auth.auth import (
@@ -519,6 +521,61 @@ async def transfer_super_admin(
 
 # ==================== Volunteer Management ====================
 
+
+@router.post(
+    "/volunteers",
+    response_model=VolunteerResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a volunteer (admin)",
+    description="Admin endpoint to create a volunteer without sending notification emails.",
+    responses={400: {"model": ErrorResponse}}
+)
+async def admin_create_volunteer(
+    volunteer_data: VolunteerCreate,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Create a new volunteer from the admin dashboard.
+    Same validation as the public endpoint but skips email notification.
+    """
+    logger.info(f"Admin {current_admin.email} creating volunteer: {volunteer_data.email}")
+
+    # Validate ministry selections
+    for ministry in volunteer_data.ministries:
+        if ministry.category not in MINISTRY_CATEGORIES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid category: {ministry.category}"
+            )
+        if ministry.ministry_area not in MINISTRY_CATEGORIES[ministry.category]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid ministry area '{ministry.ministry_area}' for category '{ministry.category}'"
+            )
+
+    db_volunteer = Volunteer(
+        name=volunteer_data.name,
+        phone=volunteer_data.phone,
+        email=volunteer_data.email
+    )
+    db.add(db_volunteer)
+    db.flush()
+
+    for ministry in volunteer_data.ministries:
+        db_volunteer.ministries.append(VolunteerMinistry(
+            ministry_area=ministry.ministry_area,
+            category=ministry.category
+        ))
+
+    db.commit()
+    db.refresh(db_volunteer)
+
+    logger.info(f"Admin-created volunteer: ID {db_volunteer.id}")
+
+    return db_volunteer
+
+
 @router.get(
     "/volunteers/{volunteer_id}",
     response_model=VolunteerDetailResponse,
@@ -807,6 +864,62 @@ async def list_ministry_tags(
 
 
 @router.post(
+    "/ministry-areas/tags",
+    response_model=MessageResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a new ministry area tag",
+    description="Add a new ministry area tag to the system configuration.",
+    responses={400: {"model": ErrorResponse}}
+)
+async def create_ministry_tag(
+    tag_data: MinistryTagCreate,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Add a new ministry area tag. Persists to DB and adds to the
+    in-memory MINISTRY_CATEGORIES so it appears on the signup form.
+    """
+    logger.info(f"Admin {current_admin.email} adding ministry tag '{tag_data.ministry_area}' to '{tag_data.category}'")
+
+    if tag_data.category not in MINISTRY_CATEGORIES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid category: {tag_data.category}"
+        )
+
+    if tag_data.ministry_area in MINISTRY_CATEGORIES[tag_data.category]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ministry area '{tag_data.ministry_area}' already exists in '{tag_data.category}'"
+        )
+
+    # Persist to DB
+    custom_tag = CustomMinistryTag(
+        ministry_area=tag_data.ministry_area,
+        category=tag_data.category
+    )
+    db.add(custom_tag)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ministry area '{tag_data.ministry_area}' already exists"
+        )
+
+    # Add to in-memory config
+    MINISTRY_CATEGORIES[tag_data.category].append(tag_data.ministry_area)
+
+    logger.info(f"Added ministry tag '{tag_data.ministry_area}' to '{tag_data.category}'")
+
+    return MessageResponse(
+        message=f"Added '{tag_data.ministry_area}' to '{tag_data.category}'"
+    )
+
+
+@router.post(
     "/ministry-areas/rename",
     response_model=MessageResponse,
     summary="Rename a ministry area tag",
@@ -841,7 +954,17 @@ async def rename_ministry_tag(
         VolunteerMinistry.ministry_area == rename_data.old_name
     ).update({VolunteerMinistry.ministry_area: rename_data.new_name})
 
+    # Also rename in custom_ministry_tags if it exists there
+    db.query(CustomMinistryTag).filter(
+        CustomMinistryTag.ministry_area == rename_data.old_name
+    ).update({CustomMinistryTag.ministry_area: rename_data.new_name})
+
     db.commit()
+
+    # Sync in-memory MINISTRY_CATEGORIES
+    for category, areas in MINISTRY_CATEGORIES.items():
+        if rename_data.old_name in areas:
+            areas[areas.index(rename_data.old_name)] = rename_data.new_name
 
     logger.info(f"Renamed '{rename_data.old_name}' -> '{rename_data.new_name}' for {count} volunteers")
 
@@ -882,7 +1005,17 @@ async def delete_ministry_tag(
         VolunteerMinistry.ministry_area == name
     ).delete()
 
+    # Also remove from custom_ministry_tags if it exists there
+    db.query(CustomMinistryTag).filter(
+        CustomMinistryTag.ministry_area == name
+    ).delete()
+
     db.commit()
+
+    # Sync in-memory MINISTRY_CATEGORIES
+    for category, areas in MINISTRY_CATEGORIES.items():
+        if name in areas:
+            areas.remove(name)
 
     logger.info(f"Deleted ministry tag '{name}' from {count} volunteers")
 
