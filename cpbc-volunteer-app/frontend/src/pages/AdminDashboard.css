@@ -179,6 +179,30 @@
   gap: 8px;
 }
 
+.home-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background-color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.home-button:hover {
+  background-color: var(--color-background-alt);
+}
+
+.home-button svg {
+  width: 16px;
+  height: 16px;
+}
+
 .qr-button {
   display: flex;
   align-items: center;
