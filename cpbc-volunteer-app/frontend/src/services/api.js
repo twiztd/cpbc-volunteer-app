@@ -141,6 +141,29 @@ export const addVolunteerNote = async (token, volunteerId, noteText) => {
   return response.data
 }
 
+// Ministry Tag Management endpoints
+
+export const getMinistryTags = async (token) => {
+  const response = await api.get('/admin/ministry-areas/tags', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const renameMinistryTag = async (token, oldName, newName) => {
+  const response = await api.post('/admin/ministry-areas/rename', { old_name: oldName, new_name: newName }, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
+export const deleteMinistryTag = async (token, name) => {
+  const response = await api.delete(`/admin/ministry-areas/${encodeURIComponent(name)}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  return response.data
+}
+
 // Ministry Reports endpoints
 
 export const getMinistryReport = async (token) => {

@@ -1714,3 +1714,10 @@
   font-size: 14px;
   color: var(--color-text-secondary);
 }
+
+/* Ministry Tags */
+.tags-description {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 20px 0;
+}

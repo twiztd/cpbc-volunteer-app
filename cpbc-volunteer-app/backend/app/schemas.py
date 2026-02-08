@@ -233,6 +233,26 @@ class MinistryReportResponse(BaseModel):
     total_volunteers: int
 
 
+# Ministry Tag Management Schemas
+class MinistryTagInfo(BaseModel):
+    """Info about a ministry area tag in use."""
+    ministry_area: str
+    category: str
+    volunteer_count: int
+
+
+class MinistryTagListResponse(BaseModel):
+    """Response schema for listing ministry area tags."""
+    tags: list[MinistryTagInfo]
+    total: int
+
+
+class MinistryAreaRename(BaseModel):
+    """Request schema for renaming a ministry area tag."""
+    old_name: str
+    new_name: str
+
+
 # Generic Response Schemas
 class MessageResponse(BaseModel):
     """Generic message response."""

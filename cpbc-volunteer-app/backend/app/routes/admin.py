@@ -34,6 +34,9 @@ from ..schemas import (
     MinistryReportResponse,
     MessageResponse,
     ErrorResponse,
+    MinistryTagInfo,
+    MinistryTagListResponse,
+    MinistryAreaRename,
     MINISTRY_CATEGORIES
 )
 from ..auth.auth import (
@@ -616,19 +619,14 @@ async def update_volunteer(
                     detail=f"Invalid ministry area: {ministry.ministry_area}"
                 )
 
-        # Delete existing ministry selections
-        db.query(VolunteerMinistry).filter(
-            VolunteerMinistry.volunteer_id == volunteer_id
-        ).delete()
-
-        # Add new ministry selections
+        # Replace ministry selections through the ORM relationship
+        # Using collection operations ensures cascade="all, delete-orphan" works correctly
+        volunteer.ministries.clear()
         for ministry in update_data.ministries:
-            new_ministry = VolunteerMinistry(
-                volunteer_id=volunteer_id,
+            volunteer.ministries.append(VolunteerMinistry(
                 ministry_area=ministry.ministry_area,
                 category=ministry.category
-            )
-            db.add(new_ministry)
+            ))
 
     db.commit()
     db.refresh(volunteer)
@@ -764,6 +762,132 @@ async def add_volunteer_note(
         admin_email=current_admin.email,
         note_text=new_note.note_text,
         created_at=new_note.created_at
+    )
+
+
+# ==================== Ministry Tag Management ====================
+
+
+@router.get(
+    "/ministry-areas/tags",
+    response_model=MinistryTagListResponse,
+    summary="List all ministry area tags in use",
+    description="Get all distinct ministry area tags currently assigned to volunteers, with counts."
+)
+async def list_ministry_tags(
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    List all distinct ministry area tags in use across all volunteers.
+    """
+    logger.info(f"Admin {current_admin.email} listing ministry area tags")
+
+    results = (
+        db.query(
+            VolunteerMinistry.ministry_area,
+            VolunteerMinistry.category,
+            func.count(VolunteerMinistry.id).label("volunteer_count")
+        )
+        .group_by(VolunteerMinistry.ministry_area, VolunteerMinistry.category)
+        .order_by(VolunteerMinistry.category, VolunteerMinistry.ministry_area)
+        .all()
+    )
+
+    tags = [
+        MinistryTagInfo(
+            ministry_area=row.ministry_area,
+            category=row.category,
+            volunteer_count=row.volunteer_count
+        )
+        for row in results
+    ]
+
+    return MinistryTagListResponse(tags=tags, total=len(tags))
+
+
+@router.post(
+    "/ministry-areas/rename",
+    response_model=MessageResponse,
+    summary="Rename a ministry area tag",
+    description="Rename a ministry area tag across all volunteers who have it.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def rename_ministry_tag(
+    rename_data: MinistryAreaRename,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Rename a ministry area tag. Updates all VolunteerMinistry records
+    where ministry_area matches old_name to new_name.
+    """
+    logger.info(
+        f"Admin {current_admin.email} renaming ministry tag "
+        f"'{rename_data.old_name}' -> '{rename_data.new_name}'"
+    )
+
+    count = db.query(VolunteerMinistry).filter(
+        VolunteerMinistry.ministry_area == rename_data.old_name
+    ).count()
+
+    if count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No volunteers found with ministry area '{rename_data.old_name}'"
+        )
+
+    db.query(VolunteerMinistry).filter(
+        VolunteerMinistry.ministry_area == rename_data.old_name
+    ).update({VolunteerMinistry.ministry_area: rename_data.new_name})
+
+    db.commit()
+
+    logger.info(f"Renamed '{rename_data.old_name}' -> '{rename_data.new_name}' for {count} volunteers")
+
+    return MessageResponse(
+        message=f"Renamed '{rename_data.old_name}' to '{rename_data.new_name}' for {count} volunteer(s)"
+    )
+
+
+@router.delete(
+    "/ministry-areas/{name}",
+    response_model=MessageResponse,
+    summary="Delete a ministry area tag",
+    description="Delete a ministry area tag from all volunteers who have it.",
+    responses={404: {"model": ErrorResponse}}
+)
+async def delete_ministry_tag(
+    name: str,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin_user)
+):
+    """
+    Delete a ministry area tag. Removes all VolunteerMinistry records
+    with that ministry_area name.
+    """
+    logger.info(f"Admin {current_admin.email} deleting ministry tag '{name}'")
+
+    count = db.query(VolunteerMinistry).filter(
+        VolunteerMinistry.ministry_area == name
+    ).count()
+
+    if count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No volunteers found with ministry area '{name}'"
+        )
+
+    db.query(VolunteerMinistry).filter(
+        VolunteerMinistry.ministry_area == name
+    ).delete()
+
+    db.commit()
+
+    logger.info(f"Deleted ministry tag '{name}' from {count} volunteers")
+
+    return MessageResponse(
+        message=f"Deleted '{name}' from {count} volunteer(s)"
     )
 
 

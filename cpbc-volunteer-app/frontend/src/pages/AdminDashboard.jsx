@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { adminLogin, forgotPassword, resetPassword, getVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry, downloadQRCode } from '../services/api'
+import { adminLogin, forgotPassword, resetPassword, getVolunteers, getMinistryAreas, getAdminUsers, createAdminUser, updateAdminUser, transferSuperAdmin, getVolunteer, updateVolunteer, deleteVolunteer, addVolunteerNote, getMinistryReport, exportAllMinistries, exportMinistry, downloadQRCode, getMinistryTags, renameMinistryTag, deleteMinistryTag } from '../services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {
@@ -47,6 +47,15 @@ function AdminDashboard() {
   const [reportLoading, setReportLoading] = useState(false)
   const [expandedMinistries, setExpandedMinistries] = useState({})
 
+  // Ministry Tag Management state
+  const [ministryTags, setMinistryTags] = useState([])
+  const [tagsLoading, setTagsLoading] = useState(false)
+  const [showRenameModal, setShowRenameModal] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [renameLoading, setRenameLoading] = useState(false)
+  const [showDeleteTagConfirm, setShowDeleteTagConfirm] = useState(null)
+  const [deleteTagLoading, setDeleteTagLoading] = useState(false)
+
   // Volunteer edit modal state
   const [showEditVolunteerModal, setShowEditVolunteerModal] = useState(false)
   const [selectedVolunteer, setSelectedVolunteer] = useState(null)
@@ -80,6 +89,9 @@ function AdminDashboard() {
     if (isAuthenticated && activeTab === 'admins') {
       loadAdminUsers()
     }
+    if (isAuthenticated && activeTab === 'tags') {
+      loadMinistryTags()
+    }
     if (isAuthenticated && activeTab === 'reports') {
       loadMinistryReport()
     }
@@ -108,6 +120,53 @@ function AdminDashboard() {
       }
     } finally {
       setAdminLoading(false)
+    }
+  }
+
+  const loadMinistryTags = async () => {
+    setTagsLoading(true)
+    try {
+      const data = await getMinistryTags(token)
+      setMinistryTags(data.tags)
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleLogout()
+      } else {
+        setError('Failed to load ministry tags')
+      }
+    } finally {
+      setTagsLoading(false)
+    }
+  }
+
+  const handleRenameTag = async () => {
+    if (!renameValue.trim() || !showRenameModal) return
+    setRenameLoading(true)
+    try {
+      await renameMinistryTag(token, showRenameModal.ministry_area, renameValue.trim())
+      setShowRenameModal(null)
+      setRenameValue('')
+      loadMinistryTags()
+      loadMinistryAreas()
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to rename ministry tag')
+    } finally {
+      setRenameLoading(false)
+    }
+  }
+
+  const handleDeleteTag = async () => {
+    if (!showDeleteTagConfirm) return
+    setDeleteTagLoading(true)
+    try {
+      await deleteMinistryTag(token, showDeleteTagConfirm.ministry_area)
+      setShowDeleteTagConfirm(null)
+      loadMinistryTags()
+      loadMinistryAreas()
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete ministry tag')
+    } finally {
+      setDeleteTagLoading(false)
     }
   }
 
@@ -807,6 +866,15 @@ function AdminDashboard() {
             Reports
           </button>
           <button
+            className={`tab-button ${activeTab === 'tags' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tags')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5zM6 7a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+            </svg>
+            Ministry Tags
+          </button>
+          <button
             className={`tab-button ${activeTab === 'admins' ? 'active' : ''}`}
             onClick={() => setActiveTab('admins')}
           >
@@ -975,6 +1043,96 @@ function AdminDashboard() {
               )}
             </div>
           </>
+        ) : activeTab === 'tags' ? (
+          /* Ministry Tag Management Tab */
+          <div className="admin-management">
+            <div className="admin-section-header">
+              <h2 className="section-title">Ministry Tags</h2>
+            </div>
+            <p className="tags-description">Manage ministry area tags across all volunteers. Renaming a tag updates it for every volunteer who has it.</p>
+
+            {tagsLoading ? (
+              <div className="loading-state">
+                <div className="loading-spinner"></div>
+                <span>Loading ministry tags...</span>
+              </div>
+            ) : ministryTags.length === 0 ? (
+              <div className="empty-state">
+                <p>No ministry tags in use</p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile Tag Cards */}
+                <div className="admin-cards">
+                  {ministryTags.map(tag => (
+                    <div key={`${tag.category}-${tag.ministry_area}`} className="admin-card">
+                      <div className="admin-card-header">
+                        <div className="admin-info">
+                          <h3 className="admin-name">{tag.ministry_area}</h3>
+                          <p className="admin-email">{tag.category}</p>
+                        </div>
+                        <span className="volunteer-count-badge">{tag.volunteer_count}</span>
+                      </div>
+                      <div className="admin-card-footer">
+                        <span className="admin-created">{tag.volunteer_count} volunteer(s)</span>
+                        <div className="admin-actions">
+                          <button
+                            className="transfer-button"
+                            onClick={() => { setShowRenameModal(tag); setRenameValue(tag.ministry_area) }}
+                          >
+                            Rename
+                          </button>
+                          <button
+                            className="toggle-status-button deactivate"
+                            onClick={() => setShowDeleteTagConfirm(tag)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Tag Table */}
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Ministry Area</th>
+                      <th>Category</th>
+                      <th>Volunteers</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ministryTags.map(tag => (
+                      <tr key={`${tag.category}-${tag.ministry_area}`}>
+                        <td><strong>{tag.ministry_area}</strong></td>
+                        <td>{tag.category}</td>
+                        <td>{tag.volunteer_count}</td>
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              className="transfer-button"
+                              onClick={() => { setShowRenameModal(tag); setRenameValue(tag.ministry_area) }}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              className="toggle-status-button deactivate"
+                              onClick={() => setShowDeleteTagConfirm(tag)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </div>
         ) : activeTab === 'admins' ? (
           /* Admin Management Tab */
           <div className="admin-management">
@@ -1540,6 +1698,99 @@ function AdminDashboard() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Rename Ministry Tag Modal */}
+      {showRenameModal && (
+        <div className="modal-overlay" onClick={() => setShowRenameModal(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Rename Ministry Tag</h2>
+              <button className="modal-close" onClick={() => setShowRenameModal(null)}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal-form">
+              <p className="forgot-description">
+                Renaming <strong>{showRenameModal.ministry_area}</strong> will update it for {showRenameModal.volunteer_count} volunteer(s).
+              </p>
+              <div className="form-group">
+                <label className="form-label" htmlFor="rename-tag">
+                  New Name <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="rename-tag"
+                  className="form-input"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="cancel-button"
+                  onClick={() => setShowRenameModal(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="submit-button"
+                  disabled={renameLoading || !renameValue.trim() || renameValue.trim() === showRenameModal.ministry_area}
+                  onClick={handleRenameTag}
+                >
+                  {renameLoading ? 'Renaming...' : 'Rename'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Ministry Tag Confirm Modal */}
+      {showDeleteTagConfirm && (
+        <div className="modal-overlay" onClick={() => setShowDeleteTagConfirm(null)}>
+          <div className="modal-content transfer-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Delete Ministry Tag</h2>
+              <button className="modal-close" onClick={() => setShowDeleteTagConfirm(null)}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            </div>
+            <div className="transfer-confirm-content">
+              <div className="transfer-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p>Delete <strong>{showDeleteTagConfirm.ministry_area}</strong> from {showDeleteTagConfirm.volunteer_count} volunteer(s)?</p>
+              </div>
+              <p className="transfer-note">This will remove the tag from all volunteers who have it. This cannot be undone.</p>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => setShowDeleteTagConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="confirm-delete-button"
+                onClick={handleDeleteTag}
+                disabled={deleteTagLoading}
+              >
+                {deleteTagLoading ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}
